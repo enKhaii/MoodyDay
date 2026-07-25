@@ -1,4 +1,4 @@
-package com.example.tutorial
+package com.example.moodyday
 
 import org.junit.Test
 

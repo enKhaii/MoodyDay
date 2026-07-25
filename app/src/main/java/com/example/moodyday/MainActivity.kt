@@ -1,4 +1,4 @@
-package com.example.tutorial
+package com.example.moodyday
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -13,8 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.example.tutorial.ui.theme.TutorialTheme
-import com.example.tutorial.ui.theme.Typography
+import com.example.moodyday.ui.theme.TutorialTheme
+import com.example.moodyday.ui.theme.Typography
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -1,4 +1,4 @@
-package com.example.tutorial.ui.theme
+package com.example.moodyday.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
