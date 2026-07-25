@@ -13,51 +13,31 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
+import com.example.moodyday.navigation.NavHostSetup
 import com.example.moodyday.ui.theme.TutorialTheme
 import com.example.moodyday.ui.theme.Typography
 
 class MainActivity : ComponentActivity() {
+    lateinit var navController : NavHostController
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         installSplashScreen()
         setContent {
             TutorialTheme {
+                // Navigation Setup(NavController)
+                navController = rememberNavController()
+                NavHostSetup(navController = navController)
+
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Greeting("")
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Composable
-fun CustomText(text: String){
-    Text(
-        text = text,
-        style = Typography.bodyMedium
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    TutorialTheme {
-        Column() {
-            Greeting("Android")
-            CustomText(text = "Hello World")
-        }
-
     }
 }
