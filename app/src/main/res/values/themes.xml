@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.MySplashScreen" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/white</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/weatherapp</item>
+        <item name="postSplashScreenTheme">@style/Theme.Tutorial</item>
+    </style>
+
+    <style name="Theme.Tutorial" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
