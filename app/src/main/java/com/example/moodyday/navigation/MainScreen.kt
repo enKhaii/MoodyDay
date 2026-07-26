@@ -67,7 +67,9 @@ fun MainScreen() {
     ) { padding ->
         NavHostSetup(
             navController = navController,
-            modifier = Modifier.padding(padding)
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
         )
     }
 }

@@ -9,8 +9,11 @@ import com.example.moodyday.ui.alerts.AlertsScreen
 import com.example.moodyday.ui.forecast.ForecastScreen
 import com.example.moodyday.ui.goals.GoalsScreen
 import com.example.moodyday.ui.settings.SettingsScreen
+import com.example.moodyday.ui.splash.AnimatedSplashScreen
 import com.example.moodyday.ui.tips.TipsScreen
-import com.example.moodyday.ui.user.LoginScreen
+import com.example.moodyday.ui.auth.LoginScreen
+import com.example.moodyday.ui.user.OnboardingScreen
+import com.example.moodyday.ui.auth.RegisterScreen
 import com.example.moodyday.ui.weather.HomeScreen
 
 @Composable
@@ -20,11 +23,20 @@ fun NavHostSetup(
 ){
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.Login.route,
+        startDestination = NavRoutes.Splash.route,
         modifier = modifier
     ){
+        composable(route = NavRoutes.Splash.route){
+            AnimatedSplashScreen(navController)
+        }
+        composable(route = NavRoutes.Onboarding.route){
+            OnboardingScreen(navController = navController)
+        }
         composable(route = NavRoutes.Login.route){
             LoginScreen(navController = navController)
+        }
+        composable(route = NavRoutes.Register.route){
+            RegisterScreen()
         }
         composable(route = NavRoutes.Home.route){
             HomeScreen()
