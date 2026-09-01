@@ -65,7 +65,7 @@ fun MainScreen() {
             }
         }
     ) { padding ->
-        NavHostSetup(
+        AppNavGraph(
             navController = navController,
             modifier = Modifier
                 .padding(padding)

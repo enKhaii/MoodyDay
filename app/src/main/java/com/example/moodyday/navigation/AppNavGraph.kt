@@ -6,18 +6,18 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.moodyday.ui.alerts.AlertsScreen
+import com.example.moodyday.ui.auth.LoginScreen
+import com.example.moodyday.ui.auth.RegisterScreen
 import com.example.moodyday.ui.forecast.ForecastScreen
 import com.example.moodyday.ui.goals.GoalsScreen
 import com.example.moodyday.ui.settings.SettingsScreen
 import com.example.moodyday.ui.splash.AnimatedSplashScreen
 import com.example.moodyday.ui.tips.TipsScreen
-import com.example.moodyday.ui.auth.LoginScreen
 import com.example.moodyday.ui.user.OnboardingScreen
-import com.example.moodyday.ui.auth.RegisterScreen
 import com.example.moodyday.ui.weather.HomeScreen
 
 @Composable
-fun NavHostSetup(
+fun AppNavGraph(
     navController : NavHostController,
     modifier : Modifier = Modifier
 ){

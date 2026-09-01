@@ -7,8 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.moodyday.navigation.AppNavGraph
 import com.example.moodyday.navigation.MainScreen
-import com.example.moodyday.navigation.NavHostSetup
 import com.example.moodyday.ui.theme.MoodyDayTheme
 
 class MainActivity : ComponentActivity() {
@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
             MoodyDayTheme {
                 // Navigation Setup(NavController)
                 navController = rememberNavController()
-                NavHostSetup(navController = navController)
+                AppNavGraph(navController = navController)
 
                 MainScreen()
             }
