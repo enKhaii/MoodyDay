@@ -14,4 +14,10 @@ object RetrofitProvider {
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
         .create(WeatherApi::class.java)
+
+    val geocodingApi: GeocodingApi = Retrofit.Builder()
+        .baseUrl("https://geocoding-api.open-meteo.com/")
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .build()
+        .create(GeocodingApi::class.java)
 }

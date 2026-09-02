@@ -6,6 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.moodyday.data.local.dao.GoalDao
 import com.example.moodyday.data.local.dao.SavedCityDao
+import com.example.moodyday.data.local.dao.UserSettingsDao
+import com.example.moodyday.data.local.dao.UserStreakDao
 import com.example.moodyday.data.local.entities.AlertRuleEntity
 import com.example.moodyday.data.local.entities.ClimateNoteEntity
 import com.example.moodyday.data.local.entities.GoalEntity
@@ -31,8 +33,8 @@ abstract class AppDatabase : RoomDatabase() {
 //    abstract fun climateNoteDao(): ClimateNoteDao
 //    abstract fun alertRuleDao(): AlertRuleDao
     abstract fun goalDao(): GoalDao
-//    abstract fun userSettingsDao(): UserSettingsDao
-//    abstract fun userStreakDao(): UserStreakDao
+    abstract fun userSettingsDao(): UserSettingsDao
+    abstract fun userStreakDao(): UserStreakDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null

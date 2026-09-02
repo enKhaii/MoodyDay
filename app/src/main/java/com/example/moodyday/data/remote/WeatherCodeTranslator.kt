@@ -1,6 +1,6 @@
 package com.example.moodyday.data.remote
 
-object WeatherCodeMapper {
+object WeatherCodeTranslator {
     fun toDescription(code: Int): String = when (code) {
         0 -> "Clear sky"
         1, 2, 3 -> "Partly cloudy"
