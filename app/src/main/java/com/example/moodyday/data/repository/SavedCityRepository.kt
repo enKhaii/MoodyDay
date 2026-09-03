@@ -22,7 +22,13 @@ data class SavedCityRemote(
 class SavedCityRepository(private val dao: SavedCityDao) {
     fun getCities(userId: String): Flow<List<SavedCityEntity>> = dao.getCitiesForUser(userId)
 
-    suspend fun addCity(city: SavedCityEntity) {
+    /** Returns the already-saved row for these coordinates, if one exists. */
+    suspend fun findByCoordinates(userId: String, lat: Double, lon: Double): SavedCityEntity? =
+        dao.getCityByCoordinates(userId, lat, lon)
+
+    /** Returns the new local row id — callers (e.g. ForecastViewModel) need this
+     *  to attach a ClimateNoteEntity to the city that was just saved. */
+    suspend fun addCity(city: SavedCityEntity): Long {
         val localId = dao.insertCity(city)
         try {
             val remote = supabase.from("saved_cities").insert(
@@ -41,6 +47,7 @@ class SavedCityRepository(private val dao: SavedCityDao) {
         } catch (e: Exception) {
             // offline — stays local only, supabaseId remains null
         }
+        return localId
     }
 
     suspend fun deleteCity(city: SavedCityEntity) {

@@ -19,6 +19,11 @@ interface SavedCityDao {
     @Query("SELECT * FROM saved_cities WHERE userId = :userId AND isHome = 1 LIMIT 1")
     suspend fun getHomeCity(userId: String): SavedCityEntity?
 
+    // Added for the forecast "save-before-note" flow: lets us check whether the
+    // city currently being viewed has already been saved, without inserting a duplicate.
+    @Query("SELECT * FROM saved_cities WHERE userId = :userId AND lat = :lat AND lon = :lon LIMIT 1")
+    suspend fun getCityByCoordinates(userId: String, lat: Double, lon: Double): SavedCityEntity?
+
     @Update
     suspend fun updateCity(city: SavedCityEntity)
 

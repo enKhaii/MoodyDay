@@ -14,6 +14,7 @@ import com.example.moodyday.ui.alerts.AlertsScreen
 import com.example.moodyday.ui.auth.LoginScreen
 import com.example.moodyday.ui.auth.RegisterScreen
 import com.example.moodyday.ui.forecast.ForecastScreen
+import com.example.moodyday.ui.forecast.ForecastViewModel
 import com.example.moodyday.ui.goals.GoalsScreen
 import com.example.moodyday.ui.settings.SettingsScreen
 import com.example.moodyday.ui.splash.AnimatedSplashScreen
@@ -89,7 +90,8 @@ fun AppNavGraph(
             )
         }
         composable(route = NavRoutes.Forecast.route) {
-            ForecastScreen()
+            val forecastViewModel: ForecastViewModel = viewModel()
+            ForecastScreen(viewModel = forecastViewModel)
         }
         composable(route = NavRoutes.Alerts.route) {
             AlertsScreen()
