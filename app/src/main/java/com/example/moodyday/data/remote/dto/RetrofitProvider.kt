@@ -20,4 +20,11 @@ object RetrofitProvider {
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
         .create(GeocodingApi::class.java)
+
+        // Separate host for archive api
+    val archiveApi: ArchiveApi = Retrofit.Builder()
+        .baseUrl("https://archive-api.open-meteo.com/")
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .build()
+        .create(ArchiveApi::class.java)
 }
