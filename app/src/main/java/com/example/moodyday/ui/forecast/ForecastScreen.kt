@@ -31,11 +31,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.example.moodyday.ui.weather.SelectedCityViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -58,62 +60,74 @@ private val WarningBg = Color(0xFFFDEAEA)
 private val WarningText = Color(0xFFC62828)
 
 @Composable
-fun ForecastScreen(viewModel: ForecastViewModel) {
+fun ForecastScreen(
+    viewModel: ForecastViewModel,
+    selectedCityViewModel: SelectedCityViewModel
+) {
+    val selectedCity by selectedCityViewModel.selectedCity.collectAsState()
+
+    LaunchedEffect(selectedCity) {
+        viewModel.loadCity(selectedCity.lat, selectedCity.lon, selectedCity.name)
+    }
+
     val homeState by viewModel.homeState.collectAsState()
     val notes by viewModel.notes.collectAsState()
     var noteDialogDay by remember { mutableStateOf<DailyOutlook?>(null) }
     val historicalState by viewModel.historicalState.collectAsState()
+    val isScreenLoading = homeState.isLoading || (historicalState.isLoading && historicalState.bars.isEmpty())
 
-    if (homeState.isLoading && homeState.hourly.isEmpty()) {
-        Box(
-            Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-    }
-
-    homeState.error?.let {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+    when {
+        isScreenLoading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Text(text = "Couldn't load weather: $it")
-                Spacer(Modifier.height(12.dp))
-                Button(
-                    onClick = { viewModel.refresh() }
+                CircularProgressIndicator(color = Color(0xFF003D61))
+            }
+        }
+
+        homeState.error != null -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = "Reload")
+                    Text(text = "Couldn't load weather: ${homeState.error}")
+                    Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = { viewModel.refresh() }
+                    ) {
+                        Text(text = "Reload")
+                    }
                 }
             }
         }
-    }
 
-    noteDialogDay?.let { day ->
-        NoteOverlay(
-            day = day,
-            existingNote = notes[day.date],
-            onDismiss = { noteDialogDay = null },
-            onSave = { text ->
-                viewModel.saveNote(day.date, text)
-                noteDialogDay = null
-            },
-            onDelete = {
-                viewModel.deleteNote(day.date)
-                noteDialogDay = null
+        else -> {
+            noteDialogDay?.let { day ->
+                NoteOverlay(
+                    day = day,
+                    existingNote = notes[day.date],
+                    onDismiss = { noteDialogDay = null },
+                    onSave = { text ->
+                        viewModel.saveNote(day.date, text)
+                        noteDialogDay = null
+                    },
+                    onDelete = {
+                        viewModel.deleteNote(day.date)
+                        noteDialogDay = null
+                    }
+                )
             }
-        )
-    }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
         item { Spacer(modifier = Modifier.height(8.dp)) }
 
         // City & Overview Header
@@ -257,6 +271,8 @@ fun ForecastScreen(viewModel: ForecastViewModel) {
         }
 
         item { Spacer(Modifier.height(24.dp)) }
+            }
+        }
     }
 }
 
