@@ -12,7 +12,7 @@ data class SelectedCity(
 
 class SelectedCityViewModel : ViewModel() {
 
-    // CITY HARD CODED FOR TESTING PURPOSE
+    // CITY HARD CODED AS DEFAULT CITY
     private val _selectedCity = MutableStateFlow(
         SelectedCity(name = "Kuala Lumpur", lat = 3.140853, lon = 101.693207)
     )

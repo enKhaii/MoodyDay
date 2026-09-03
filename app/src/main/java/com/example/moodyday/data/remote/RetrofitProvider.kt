@@ -2,6 +2,7 @@ package com.example.moodyday.data.remote
 
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
@@ -21,7 +22,23 @@ object RetrofitProvider {
         .build()
         .create(GeocodingApi::class.java)
 
-        // Separate host for archive api
+    val nominatimApi: NominatimApi = Retrofit.Builder()
+        .baseUrl("https://nominatim.openstreetmap.org/")
+        .client(
+            OkHttpClient.Builder()
+                .addInterceptor { chain ->
+                    val request = chain.request().newBuilder()
+                        .header("User-Agent", "MoodyDayApp/1.0")
+                        .build()
+                    chain.proceed(request)
+                }
+                .build()
+        )
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .build()
+        .create(NominatimApi::class.java)
+
+    // Separate host for archive api
     val archiveApi: ArchiveApi = Retrofit.Builder()
         .baseUrl("https://archive-api.open-meteo.com/")
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))

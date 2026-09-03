@@ -1,6 +1,7 @@
 package com.example.moodyday.ui.weather
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,14 +14,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.filled.WaterDrop
@@ -35,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -47,18 +54,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.rememberNavController
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
-    val navController = rememberNavController()
+fun HomeScreen(
+    viewModel: HomeViewModel = viewModel(),
+    selectedCityViewModel: SelectedCityViewModel,
+    onSearchClick: () -> Unit,
+    onForecastClick: () -> Unit,
+    onAlertsClick: () -> Unit,
+    onTipsClick: () -> Unit
+) {
     val state by viewModel.uiState.collectAsState()
+    val selectedCity by selectedCityViewModel.selectedCity.collectAsState()
+
+    LaunchedEffect(selectedCity) {
+        viewModel.loadWeather(selectedCity.lat, selectedCity.lon, selectedCity.name)
+    }
 
     // Background color gradient
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFFDFF1DB),
-            Color(0xFF1F88FB)
+            Color(0xFFDFF1FB),
+            Color(0xFFF1F8FB)
         )
     )
 
@@ -72,7 +89,8 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
-                .padding(top = 48.dp, bottom = 24.dp)   // Top padding pushes content down, bottom padding clears scroll space
+                .padding(top = 48.dp, bottom = 24.dp),   // Top padding pushes content down, bottom padding clears scroll space
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             when {
                 state.isLoading -> {
@@ -97,11 +115,18 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
 
                 else -> {
                     // Header: City Name, Icon, Temperature, Feels Like
+                    val locationText = if (!state.countryCode.isNullOrEmpty()) {
+                        "${state.cityName}, ${state.countryCode!!.uppercase()}"
+                    } else {
+                        state.cityName
+                    }
+
                     Text(
-                        text = state.cityName,
+                        text = locationText,
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E293B)
+                        color = Color(0xFF1E293B),
+                        modifier = Modifier.clickable { onSearchClick() }
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -113,20 +138,20 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                         Icon(
                             imageVector = Icons.Default.WbSunny,
                             contentDescription = state.condition,
-                            modifier = Modifier.size(72.dp),
+                            modifier = Modifier.size(80.dp),
                             tint = Color(0xFF003D61)
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.width(16.dp))
                         Text(
                             text = "${state.temperature?.toInt()}°",
-                            fontSize = 80.sp,
+                            fontSize = 88.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color(0xFF003D61),
-                            letterSpacing = (-2).sp
+                            letterSpacing = (-3).sp
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
                         text = "Feels like ${state.feelsLike?.toInt()}°C",
@@ -165,7 +190,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Climate Insight Card
-                    ClimateInsightCard()
+                    ClimateInsightCard(state = state, type = state.insightType)
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -174,7 +199,8 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                         title = "Forecast",
                         icon = Icons.Default.DateRange,
                         backgroundColor = Color(0xFF003D61),
-                        contentColor = Color.White
+                        contentColor = Color.White,
+                        onClick = onForecastClick
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     ActionButton(
@@ -182,7 +208,8 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                         icon = Icons.Outlined.Notifications,
                         backgroundColor = Color.White,
                         contentColor = Color(0xFF1E293B),
-                        iconTint = Color(0xFFD32F2F)
+                        iconTint = Color(0xFFD32F2F),
+                        onClick = onAlertsClick
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     ActionButton(
@@ -190,7 +217,8 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                         icon = Icons.Default.Eco,
                         backgroundColor = Color.White,
                         contentColor = Color(0xFF1E293B),
-                        iconTint = Color(0xFF003D61)
+                        iconTint = Color(0xFF003D61),
+                        onClick = onTipsClick
                     )
                 }
             }
@@ -209,32 +237,30 @@ private fun StatCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = modifier.height(110.dp)
+        modifier = modifier.height(120.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(vertical = 12.dp),
+                .padding(vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
                 tint = Color(0xFF64748B),
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(28.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = label,
                 fontSize = 12.sp,
                 color = Color(0xFF64748B),
                 fontWeight = FontWeight.Medium
             )
-            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = value,
-                fontSize = 18.sp,
+                fontSize = 20.sp,
                 color = Color(0xFF1E293B),
                 fontWeight = FontWeight.Bold
             )
@@ -243,7 +269,24 @@ private fun StatCard(
 }
 
 @Composable
-private fun ClimateInsightCard() {
+private fun ClimateInsightCard(state: HomeUiState, type: InsightType) {
+    val (icon, accentColor) = when (type) {
+        InsightType.WARMER -> Icons.Default.WarningAmber to Color(0xFFD32F2F)
+        InsightType.COOLER -> Icons.Default.AcUnit to Color(0xFF0284C7)
+        InsightType.NEUTRAL -> Icons.Default.CheckCircle to Color(0xFF16A34A)
+    }
+
+    val watermarkIcon = when (type) {
+        InsightType.WARMER -> Icons.Default.TrendingUp
+        InsightType.COOLER -> Icons.Default.TrendingDown
+        InsightType.NEUTRAL -> Icons.Default.History
+    }
+
+    val tagText = when (type) {
+        InsightType.WARMER, InsightType.COOLER -> "Anomaly Detected"
+        InsightType.NEUTRAL -> "Typical Pattern"
+    }
+
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -252,7 +295,7 @@ private fun ClimateInsightCard() {
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             Icon(
-                imageVector = Icons.Default.TrendingUp,
+                imageVector = watermarkIcon,
                 contentDescription = null,
                 tint = Color(0xFFF1F5F9),
                 modifier = Modifier
@@ -268,12 +311,12 @@ private fun ClimateInsightCard() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.WarningAmber,
-                        contentDescription = "Warning",
-                        tint = Color(0xFFD32F2F),
+                        imageVector = icon,
+                        contentDescription = "Insight Status",
+                        tint = accentColor,
                         modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Climate Insight",
                         fontSize = 20.sp,
@@ -283,11 +326,10 @@ private fun ClimateInsightCard() {
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
-
                 Text(
-                    text = "3°C warmer than historical average",
+                    text = state.insight ?: "No data available",
                     fontSize = 15.sp,
-                    color = Color(0xFFD32F2F),
+                    color = accentColor,
                     fontWeight = FontWeight.Medium
                 )
 
@@ -302,9 +344,9 @@ private fun ClimateInsightCard() {
                         textColor = Color(0xFF475569)
                     )
                     PillTag(
-                        text = "Anomaly Detected",
-                        backgroundColor = Color(0xFFFFEBEE),
-                        textColor = Color(0xFFD32F2F)
+                        text = tagText,
+                        backgroundColor = accentColor.copy(alpha = 0.15f),  // 15% opacity of the accentColor
+                        textColor = accentColor
                     )
                 }
             }
@@ -339,13 +381,14 @@ private fun ActionButton(
     icon: ImageVector,
     backgroundColor: Color,
     contentColor: Color,
-    iconTint: Color = contentColor
+    iconTint: Color = contentColor,
+    onClick: () -> Unit
 ) {
     Button(
-        onClick = { /* Connect to navController */ },
+        onClick = onClick,
         colors = ButtonDefaults.buttonColors(containerColor = backgroundColor),
         shape = RoundedCornerShape(24.dp),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -358,7 +401,7 @@ private fun ActionButton(
                 tint = iconTint,
                 modifier = Modifier.size(24.dp)
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = title,
                 fontSize = 16.sp,

@@ -1,5 +1,8 @@
 package com.example.moodyday.navigation
 
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+
 sealed class NavRoutes(val route: String) {
     // Splash Screen (NOT ACTUAL SCREEN)
     object Splash : NavRoutes("splash")
@@ -17,5 +20,16 @@ sealed class NavRoutes(val route: String) {
     object Goals : NavRoutes("goals")
 
     // Alone screen (Icon in Home Screen)
+    object CitySearch : NavRoutes("search")
     object Settings : NavRoutes("settings")
+}
+
+fun NavHostController.navigateToTab(route: String) {
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = true
+    }
 }

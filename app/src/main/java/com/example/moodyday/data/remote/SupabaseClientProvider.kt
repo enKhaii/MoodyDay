@@ -9,10 +9,12 @@ const val SUPABASE_URL = BuildConfig.SUPABASE_URL
 const val SUPABASE_KEY = BuildConfig.SUPABASE_ANON_KEY
 
 // Supabase client instance, created once for the whole app
-val supabase = createSupabaseClient(
-    supabaseUrl = SUPABASE_URL,
-    supabaseKey = SUPABASE_KEY
-) {
-    install(Postgrest)
-    install(Auth)
+val supabase by lazy {
+    createSupabaseClient(
+        supabaseUrl = SUPABASE_URL,
+        supabaseKey = SUPABASE_KEY
+    ) {
+        install(Postgrest)
+        install(Auth)
+    }
 }

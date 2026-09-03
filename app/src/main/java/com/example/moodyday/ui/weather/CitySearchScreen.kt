@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -77,8 +78,8 @@ fun CitySearchScreen(
     ) { granted ->
         if (granted) {
             coroutineScope.launch {
-                viewModel.useCurrentLocation(context) { lat, lon ->
-                    selectedCityViewModel.selectCity(SelectedCity("Current Location", lat, lon))
+                viewModel.useCurrentLocation(context) { name, lat, lon ->
+                    selectedCityViewModel.selectCity(SelectedCity(name, lat, lon))
                     onCitySelected()
                 }
             }
@@ -92,7 +93,7 @@ fun CitySearchScreen(
                     Text(
                         text = "City Search",
                         fontSize = 20.sp,
-                        color = Color(0xFF004D73),
+                        color = Color(0xFF003D61),
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -101,10 +102,11 @@ fun CitySearchScreen(
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF004D71)
+                            tint = Color(0xFF003D61)
                         )
                     }
                 },
+                modifier = Modifier.statusBarsPadding(),
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
@@ -116,7 +118,7 @@ fun CitySearchScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 20.dp)
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Search Bar
             OutlinedTextField(
@@ -138,13 +140,16 @@ fun CitySearchScreen(
                 trailingIcon = {
                     if (isSearching) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(120.dp),
+                            modifier = Modifier.size(20.dp),
                             color = Color(0xFF006494)
                         )
                     }
                 },
+                singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color(0xFF1E293B),
+                    unfocusedTextColor = Color(0xFF1E293B),
                     focusedContainerColor = Color(0xFFF1F5F9),
                     unfocusedContainerColor = Color(0xFFF1F5F9),
                     focusedBorderColor = Color.Transparent,
@@ -153,7 +158,7 @@ fun CitySearchScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Location Button
             Button(
@@ -164,8 +169,14 @@ fun CitySearchScreen(
 
                     if (hasPermission) {
                         coroutineScope.launch {
-                            viewModel.useCurrentLocation(context) { lat, lon ->
-                                selectedCityViewModel.selectCity(SelectedCity("Current Location", lat, lon))
+                            viewModel.useCurrentLocation(context) { name, lat, lon ->
+                                selectedCityViewModel.selectCity(
+                                    SelectedCity(
+                                        name,
+                                        lat,
+                                        lon
+                                    )
+                                )
                                 onCitySelected()
                             }
                         }
@@ -182,88 +193,87 @@ fun CitySearchScreen(
                 Icon(
                     imageVector = Icons.Outlined.MyLocation,
                     contentDescription = null,
-                    tint = Color.White
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Use Current Location",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
+            }
 
-                Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-                // Scrollable List Section (LAZY COLUMN) - Need this to prevent if a user has a lot of added cities
-                if (results.isNotEmpty()) {
+            // Scrollable List Section (LAZY COLUMN) - Need this to prevent if a user has a lot of added cities
+            if (results.isNotEmpty()) {
+                Text(
+                    text = "SEARCH RESULTS",
+                    fontSize = 11.sp,
+                    color = Color(0xFF64748B),
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(results) { result ->
+                        CityCard(
+                            cityName = result.name,
+                            country = result.country ?: "",
+                            iconBgColor = Color(0xFFDDF1F8),
+                            iconColor = Color(0xFF006494),
+                            onClick = {
+                                viewModel.saveCity(result)
+                                selectedCityViewModel.selectCity(
+                                    SelectedCity(result.name, result.latitude, result.longitude)
+                                )
+                                onCitySelected()
+                            }
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = "RECENT CITIES",
+                    fontSize = 11.sp,
+                    color = Color(0xFF64748B),
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (savedCities.isEmpty()) {
+                    Spacer(modifier = Modifier.height(40.dp))
                     Text(
-                        text = "SEARCH RESULTS",
-                        fontSize = 12.sp,
-                        color = Color(0xFF64748B),
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
+                        text = "No saved cities yet — search above to add one",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        color = Color(0xFF64748B)
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(results) { result ->
+                        items(savedCities) { city ->
                             CityCard(
-                                cityName = result.name,
-                                country = result.country ?: "",
+                                cityName = city.cityName,
+                                country = city.country ?: "",
                                 iconBgColor = Color(0xFFDDF1F8),
                                 iconColor = Color(0xFF006494),
+                                showDelete = true,
+                                onDelete = { viewModel.deleteCity(city) },
                                 onClick = {
-                                    viewModel.saveCity(result)
                                     selectedCityViewModel.selectCity(
-                                        SelectedCity(result.name, result.latitude, result.longitude)
+                                        SelectedCity(city.cityName, city.lat, city.lon)
                                     )
                                     onCitySelected()
                                 }
                             )
-                        }
-                    }
-                } else {
-                    Text(
-                        text = "RECENT CITIES",
-                        fontSize = 12.sp,
-                        color = Color(0xFF64748B),
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    if (savedCities.isEmpty()) {
-                        Spacer(modifier = Modifier.height(40.dp))
-                        Text(
-                            text = "No saved cities yet — search above to add one",
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            color = Color(0xFF64748B)
-                        )
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(savedCities) { city ->
-                                CityCard(
-                                    cityName = city.cityName,
-                                    country = city.country ?: "",
-                                    iconBgColor = Color(0xFFDDF1F8),
-                                    iconColor = Color(0xFF006494),
-                                    showDelete = true,
-                                    onDelete = {
-                                        viewModel.deleteCity(city)
-                                    },
-                                    onClick = {
-                                        selectedCityViewModel.selectCity(
-                                            SelectedCity(city.cityName, city.lat, city.lon)
-                                        )
-                                        onCitySelected()
-                                    }
-                                )
-                            }
                         }
                     }
                 }
@@ -284,7 +294,7 @@ fun CityCard(
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier
@@ -322,8 +332,8 @@ fun CityCard(
                 Text(
                     text = cityName,
                     fontSize = 16.sp,
-                    color = Color(0xFF1E293B),
-                    fontWeight = FontWeight.SemiBold
+                    color = Color(0xFF0F172A),
+                    fontWeight = FontWeight.Medium
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(

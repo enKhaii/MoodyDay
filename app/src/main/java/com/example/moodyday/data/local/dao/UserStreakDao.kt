@@ -15,7 +15,7 @@ interface UserStreakDao {
     @Query("SELECT * FROM user_streaks WHERE userId = :userId LIMIT 1")
     fun getUserStreak(userId: String): Flow<UserStreakEntity?>
 
-    @Query("UPDATE user_streaks SET currentStreak = :streak, lastActiveDate = :date WHERE userId = :userId")
+    @Query("UPDATE user_streaks SET currentStreak = :streak, lastCompletedDate = :date WHERE userId = :userId")
     suspend fun updateStreak(userId: String, streak: Int, date: String)
 
     @Query("DELETE FROM user_streaks WHERE userId = :userId")

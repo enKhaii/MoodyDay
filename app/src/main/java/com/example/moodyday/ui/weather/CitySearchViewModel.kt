@@ -83,18 +83,21 @@ class CitySearchViewModel(
     }
 
     @SuppressLint("MissingPermission")  // permission is checked in the screen before calling this
-    suspend fun useCurrentLocation(
-        context: Context,
-        onResult: (lat: Double, lon: Double) -> Unit,
-    ) {
-        try {
-            val client = LocationServices.getFusedLocationProviderClient(context)
-            val location = client.lastLocation.await()
-            if (location != null) {
-                onResult(location.latitude, location.longitude)
-            }
-        } catch(e : Exception) {
-            // location not available, user can still search city manually
+    fun useCurrentLocation(context: Context, onResult: (name: String, lat: Double, lon: Double) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val client = LocationServices.getFusedLocationProviderClient(context)
+                val location = client.lastLocation.await()
+                if (location != null) {
+                    val cityName = try {
+                        val response = RetrofitProvider.nominatimApi.reverseGeocode(location.latitude, location.longitude)
+                        response.address?.city ?: response.address?.town ?: response.address?.village ?: "Current Location"
+                    } catch (e: Exception) {
+                        "Current Location" // fallback if reverse geocoding fails
+                    }
+                    onResult(cityName, location.latitude, location.longitude)
+                }
+            } catch (e: Exception) { /* location unavailable */ }
         }
     }
 }

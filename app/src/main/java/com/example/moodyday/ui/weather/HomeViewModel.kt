@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 data class HomeUiState(
     val isLoading: Boolean = true,
     val cityName: String = "Kuala Lumpur",
+    val countryCode: String? = null,
     val temperature: Double? = null,
     val feelsLike: Double? = null,      // feelsLike = Temperature HUMANS feels (apparent temperature)
     val humidity: Double? = null,
@@ -19,9 +20,13 @@ data class HomeUiState(
     val uvIndex: Double? = null,
     val condition: String = "",
     val conditionEmoji: String = "",
-    val error: String? = null
-
+    val error: String? = null,
+    val insight: String? = null,
+    val insightText: String? = null,
+    val insightType: InsightType = InsightType.NEUTRAL
 )
+
+enum class InsightType { WARMER, COOLER, NEUTRAL }
 
 class HomeViewModel : ViewModel() {
     // Private Mutable_State - only ViewModel can change
@@ -43,17 +48,53 @@ class HomeViewModel : ViewModel() {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             try {
-                val response = RetrofitProvider.weatherApi.getWeather(lat = lat, lon = lon)
+                // Weather API
+                val weatherResponse = RetrofitProvider.weatherApi.getWeather(lat = lat, lon = lon)
+
+                // Nominatim API
+                val geoResponse = RetrofitProvider.nominatimApi.reverseGeocode(lat, lon)
+                val countryCode = geoResponse.address?.countryCode
+
+                val insight = weatherResponse.daily?.let { daily ->
+                    if (daily.temperature_2m_max.size >= 2) {
+                        val yesterday = daily.temperature_2m_max[0]
+                        val today = daily.temperature_2m_max[1]
+                        val diff = today - yesterday
+                        when {
+                            diff > 2 -> "%.1f°C warmer than yesterday".format(diff)
+                            diff < -2 -> "%.1f°C cooler than yesterday".format(-diff)
+                            else -> "Similar to yesterday"
+                        }
+                    } else null
+                }
+
+                val (insightText, insightType) = weatherResponse.daily?.let { daily ->
+                    if (daily.temperature_2m_max.size >= 2) {
+                        val yesterday = daily.temperature_2m_max[0]
+                        val today = daily.temperature_2m_max[1]
+                        val diff = today - yesterday
+                        when {
+                            diff > 2 -> "%.1f°C warmer than yesterday".format(diff) to InsightType.WARMER
+                            diff < -2 -> "%.1f°C cooler than yesterday".format(-diff) to InsightType.COOLER
+                            else -> "Similar to yesterday's temperature" to InsightType.NEUTRAL
+                        }
+                    } else null to InsightType.NEUTRAL
+                } ?: (null to InsightType.NEUTRAL)
+
                 _uiState.value = HomeUiState(
                     isLoading = false,
                     cityName = cityName,
-                    temperature = response.current.temperature_2m,
-                    feelsLike = response.current.apparent_temperature,
-                    humidity = response.current.relative_humidity_2m,
-                    windSpeed = response.current.wind_speed_10m,
-                    uvIndex = response.daily?.uv_index_max?.firstOrNull(),
-                    condition = WeatherCodeTranslator.toDescription(response.current.weather_code),
-                    conditionEmoji = WeatherCodeTranslator.toEmoji(response.current.weather_code)
+                    countryCode = countryCode,
+                    temperature = weatherResponse.current.temperature_2m,
+                    feelsLike = weatherResponse.current.apparent_temperature,
+                    humidity = weatherResponse.current.relative_humidity_2m,
+                    windSpeed = weatherResponse.current.wind_speed_10m,
+                    uvIndex = weatherResponse.daily?.uv_index_max?.firstOrNull(),
+                    condition = WeatherCodeTranslator.toDescription(weatherResponse.current.weather_code),
+                    conditionEmoji = WeatherCodeTranslator.toEmoji(weatherResponse.current.weather_code),
+                    insight = insight,
+                    insightText = insightText,
+                    insightType = insightType,
                 )
             } catch (e : Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Failed to Load Weather")
