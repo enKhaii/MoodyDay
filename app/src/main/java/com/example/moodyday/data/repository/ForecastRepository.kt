@@ -51,7 +51,7 @@ class ForecastRepository(
     /** Current + hourly + daily outlook for the forecast screen. */
     suspend fun getHomeUiState(lat: Double, lon: Double, cityLabel: String): HomeUiState =
         withContext(Dispatchers.IO) {
-            val weather = weatherApi.getWeather(lat, lon)
+            val weather = weatherApi.getWeather(lat, lon, pastDays = 0)
             val todayDateStr = weather.daily?.time?.firstOrNull() ?: LocalDate.now().toString()
             val todayDate = runCatching { LocalDate.parse(todayDateStr) }.getOrNull() ?: LocalDate.now()
 
@@ -104,7 +104,7 @@ class ForecastRepository(
      */
     suspend fun getHistoricalUiState(lat: Double, lon: Double): HistoricalUiState =
         withContext(Dispatchers.IO) {
-            val weather = weatherApi.getWeather(lat, lon)
+            val weather = weatherApi.getWeather(lat, lon, pastDays = 0)
             val dailyBlock = weather.daily
 
             val bars = if (dailyBlock == null) emptyList() else coroutineScope {

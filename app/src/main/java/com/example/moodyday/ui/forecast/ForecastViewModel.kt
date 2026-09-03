@@ -51,20 +51,14 @@ class ForecastViewModel @JvmOverloads constructor(
     private var searchJob: Job? = null
     private var notesJob: Job? = null
 
-    private var lastLat: Double = 47.6062
-    private var lastLon: Double = -122.3321
-    private var lastCityLabel: String = "Seattle, WA"
+    private var lastLat: Double = 3.140853
+    private var lastLon: Double = 101.693207
+    private var lastCityLabel: String = "Kuala Lumpur"
 
     // Null until this city has been saved to Room (lazily, the first time a
     // note is added — see ensureCitySaved()). Notes require a cityId, so this
     // also drives which city's notes we're currently observing.
     private var currentCityId: Long? = null
-
-    init {
-        // TODO: once CityPreferences-equivalent persistence exists, restore the
-        //  last-viewed city here instead of always falling back to the default.
-        loadCity(lastCityLabel)
-    }
 
     /** Called on every keystroke in the search overlay. Debounces so we don't
      *  hit the geocoding API on every single character. */
@@ -97,6 +91,16 @@ class ForecastViewModel @JvmOverloads constructor(
         lastLon = result.longitude
         lastCityLabel = listOfNotNull(result.name, result.admin1).joinToString(", ")
         clearSearch()
+        onCityChanged()
+    }
+
+    fun loadCity(lat: Double, lon: Double, cityName: String) {
+        if (lastLat == lat && lastLon == lon && lastCityLabel == cityName && !_homeState.value.isLoading && _homeState.value.cityLabel.isNotEmpty()) {
+            return
+        }
+        lastLat = lat
+        lastLon = lon
+        lastCityLabel = cityName
         onCityChanged()
     }
 

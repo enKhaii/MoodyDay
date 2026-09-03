@@ -91,7 +91,10 @@ fun AppNavGraph(
         }
         composable(route = NavRoutes.Forecast.route) {
             val forecastViewModel: ForecastViewModel = viewModel()
-            ForecastScreen(viewModel = forecastViewModel)
+            ForecastScreen(
+                viewModel = forecastViewModel,
+                selectedCityViewModel = selectedCityViewModel
+            )
         }
         composable(route = NavRoutes.Alerts.route) {
             AlertsScreen()
