@@ -1,97 +1,438 @@
 package com.example.moodyday.ui.settings
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.LocationCity
+import androidx.compose.material.icons.outlined.Nightlight
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Thermostat
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
+fun SettingsScreen(
+    viewModel: SettingsViewModel = viewModel(),
+    onBackClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {}
+) {
     val settingsState by viewModel.settingsState.collectAsState()
+    val completedGoalsCount by viewModel.completedGoalsCount.collectAsState()
     val context = LocalContext.current
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Settings", fontWeight = FontWeight.Bold) }) }
+        containerColor = Color(0xFFF8FAFC),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "Settings",
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF003D61),
+                            fontSize = 18.sp,
+                            modifier = Modifier.padding(end = 48.dp)
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF1E293B)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF8FAFC))
+            )
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp)
         ) {
-            Text(
-                text = "PREFERENCES",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
-            SettingsRow(title = "Temperature Unit", subtitle = settingsState.tempUnit)
-            SettingsRow(title = "Dark Theme", subtitle = settingsState.theme)
-
-            Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "ACCOUNT & DATA",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
-            SettingsRow(title = "Saved Cities", subtitle = "Manage 3 locations")
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+            // Profile Card
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column {
-                    Text("Notifications", style = MaterialTheme.typography.bodyLarge)
-                    Text("Alerts, Tips & Goals", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(
-                    checked = settingsState.notificationsEnabled,
-                    onCheckedChange = { isChecked ->
-                        viewModel.toggleNotifications(isChecked)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE2E8F0)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Profile Picture",
+                            tint = Color(0xFF64748B),
+                            modifier = Modifier.size(48.dp)
+                        )
                     }
-                )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Dynamically displays username derived from email prefix, or full email
+                    val displayName = viewModel.userEmail.substringBefore("@")
+                        .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+
+                    Text(
+                        text = displayName,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B)
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = viewModel.userEmail,
+                        fontSize = 13.sp,
+                        color = Color(0xFF64748B)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = Color(0xFF005A8C)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.EmojiEvents,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "$completedGoalsCount goals completed this month",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // PREFERENCES Card
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "PREFERENCES",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF006494),
+                        letterSpacing = 0.5.sp,
+                        modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
+                    )
+
+                    SettingsActionRow(
+                        icon = Icons.Outlined.Thermostat,
+                        title = "Temperature Unit",
+                        subtitle = "Celsius (°C)",
+                        onClick = { }
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    SettingsToggleRow(
+                        icon = Icons.Outlined.Nightlight,
+                        title = "Dark Theme",
+                        subtitle = "System default",
+                        checked = settingsState.theme == "dark",
+                        onCheckedChange = { viewModel.toggleTheme(it) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ACCOUNT & DATA Card
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "ACCOUNT & DATA",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF006494),
+                        letterSpacing = 0.5.sp,
+                        modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
+                    )
+
+                    SettingsActionRow(
+                        icon = Icons.Outlined.LocationCity,
+                        title = "Saved Cities",
+                        subtitle = "Manage 3 locations",
+                        onClick = { }
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    SettingsActionRow(
+                        icon = Icons.Outlined.Notifications,
+                        title = "Notifications",
+                        subtitle = "Alerts, Tips & Goals",
+                        onClick = { }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = "Reset Progress",
-                color = MaterialTheme.colorScheme.error,
+            // Reset Progress Outlined Button
+            OutlinedButton(
+                onClick = {
+                    viewModel.resetProgress()
+                    Toast.makeText(context, "Progress has been reset!", Toast.LENGTH_SHORT).show()
+                },
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color(0xFFEF4444)),
+                colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.Transparent),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        viewModel.resetProgress()
-                        Toast.makeText(context, "Progress has been reset!", Toast.LENGTH_SHORT).show()
+                    .height(52.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = null,
+                        tint = Color(0xFFEF4444),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Reset Progress",
+                        color = Color(0xFFEF4444),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Log Out Button
+            Button(
+                onClick = {
+                    viewModel.logout {
+                        onLogoutClick()
                     }
-                    .padding(16.dp)
-            )
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE2E8F0)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.Logout,
+                        contentDescription = null,
+                        tint = Color(0xFF475569),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Log Out",
+                        color = Color(0xFF475569),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
 
 @Composable
-fun SettingsRow(title: String, subtitle: String) {
-    Column(
+fun SettingsActionRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { }
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 6.dp, horizontal = 4.dp)
     ) {
-        Text(title, style = MaterialTheme.typography.bodyLarge)
-        Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .background(Color(0xFFE0F2FE), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color(0xFF006494),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(14.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF1E293B)
+            )
+            Text(
+                text = subtitle,
+                fontSize = 13.sp,
+                color = Color(0xFF64748B)
+            )
+        }
+
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = Color(0xFFCBD5E1),
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+fun SettingsToggleRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp, horizontal = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .background(Color(0xFFE0F2FE), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color(0xFF006494),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(14.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF1E293B)
+            )
+            Text(
+                text = subtitle,
+                fontSize = 13.sp,
+                color = Color(0xFF64748B)
+            )
+        }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFF003D61),
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = Color(0xFFE2E8F0),
+                uncheckedBorderColor = Color.Transparent
+            )
+        )
     }
 }

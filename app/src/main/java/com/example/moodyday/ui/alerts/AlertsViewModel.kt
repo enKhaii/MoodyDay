@@ -3,6 +3,7 @@ package com.example.moodyday.ui.alerts
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.moodyday.data.auth.SessionManager
 import com.example.moodyday.data.local.AppDatabase
 import com.example.moodyday.data.local.entities.AlertRuleEntity
 import com.example.moodyday.data.remote.RetrofitProvider
@@ -38,7 +39,7 @@ class AlertsViewModel(application: Application) : AndroidViewModel(application) 
     private val _uiState = MutableStateFlow(AlertsUiState())
     val uiState: StateFlow<AlertsUiState> = _uiState
 
-    private val userId = "chongwc" // Use the same test user ID as AppNavGraph
+    private val userId = SessionManager.currentUserId ?: ""
     private var currentWeather: WeatherResponse? = null
 
     private var currentCityId: Long? = null
