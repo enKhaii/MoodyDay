@@ -136,7 +136,7 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.WbSunny,
+                            imageVector = state.weatherIcon,
                             contentDescription = state.condition,
                             modifier = Modifier.size(80.dp),
                             tint = Color(0xFF003D61)

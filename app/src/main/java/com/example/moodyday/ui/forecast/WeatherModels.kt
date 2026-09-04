@@ -13,7 +13,7 @@ data class DailyOutlook(
     val date: String,         // ISO "2026-09-03", stable key for notes/goals
     val label: String,        // "Today", "Mon", "Tue"...
     val weatherCode: Int,
-    val uvIndexMax: Double,
+    val rainChancePercent: Int,
     val tempMin: Int,
     val tempMax: Int
 )
@@ -40,9 +40,12 @@ data class HomeUiState(
     val error: String? = null
 )
 
+enum class InsightType { WARMER, COOLER, NEUTRAL }
+
 data class HistoricalUiState(
     val bars: List<WeeklyBar> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val heatWarning: Boolean = false
+    val insightMessage: String = "",
+    val insightType: InsightType = InsightType.NEUTRAL
 )

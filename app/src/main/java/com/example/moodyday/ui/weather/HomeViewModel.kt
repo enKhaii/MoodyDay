@@ -1,5 +1,8 @@
 package com.example.moodyday.ui.weather
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.moodyday.data.remote.RetrofitProvider
@@ -22,7 +25,8 @@ data class HomeUiState(
     val error: String? = null,
     val insight: String? = null,
     val insightText: String? = null,
-    val insightType: InsightType = InsightType.NEUTRAL
+    val insightType: InsightType = InsightType.NEUTRAL,
+    val weatherIcon: ImageVector = Icons.Default.WbSunny
 )
 
 enum class InsightType { WARMER, COOLER, NEUTRAL }
@@ -94,6 +98,7 @@ class HomeViewModel : ViewModel() {
                     insight = insight,
                     insightText = insightText,
                     insightType = insightType,
+                    weatherIcon = WeatherCodeTranslator.toIcon(weatherResponse.current.weather_code),
                 )
             } catch (e : Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Failed to Load Weather")

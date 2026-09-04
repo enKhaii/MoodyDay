@@ -11,7 +11,7 @@ interface WeatherApi {
         @Query("longitude") lon: Double,
         @Query("current") current: String = "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code",
         @Query("hourly") hourly: String = "temperature_2m,wind_speed_10m,weather_code",
-        @Query("daily") daily: String = "temperature_2m_max,temperature_2m_min,weather_code,uv_index_max",
+        @Query("daily") daily: String = "temperature_2m_max,temperature_2m_min,weather_code,uv_index_max,precipitation_probability_max",
         @Query("timezone") timezone: String = "auto",
         @Query("past_days") pastDays: Int = 1               // includes yesterday in the daily array
     ): WeatherResponse

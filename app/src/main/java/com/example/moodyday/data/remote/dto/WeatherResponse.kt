@@ -32,5 +32,6 @@ data class DailyWeather(
     val temperature_2m_max: List<Double>,
     val temperature_2m_min: List<Double>,
     val weather_code: List<Int>,
-    val uv_index_max: List<Double>? = null
+    val uv_index_max: List<Double>? = null,
+    val precipitation_probability_max: List<Int>? = null
 )

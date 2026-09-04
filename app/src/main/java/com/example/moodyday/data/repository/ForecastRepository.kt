@@ -9,12 +9,13 @@ import com.example.moodyday.ui.forecast.DailyOutlook
 import com.example.moodyday.ui.forecast.HistoricalUiState
 import com.example.moodyday.ui.forecast.HomeUiState
 import com.example.moodyday.ui.forecast.HourlyPoint
+import com.example.moodyday.ui.forecast.InsightType
 import com.example.moodyday.ui.forecast.WeeklyBar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -96,7 +97,7 @@ class ForecastRepository(
                         label = if (i == 0 || date == todayDate) "Today"
                         else date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.US),
                         weatherCode = dailyBlock.weather_code.getOrNull(i) ?: 0,
-                        uvIndexMax = dailyBlock.uv_index_max?.getOrNull(i) ?: 0.0,
+                        rainChancePercent = dailyBlock.precipitation_probability_max?.getOrNull(i) ?: 0,
                         tempMin = dailyBlock.temperature_2m_min.getOrNull(i)?.roundToInt() ?: 0,
                         tempMax = dailyBlock.temperature_2m_max.getOrNull(i)?.roundToInt() ?: 0
                     )
@@ -122,8 +123,8 @@ class ForecastRepository(
             val weather = weatherApi.getWeather(lat, lon, pastDays = 0)
             val dailyBlock = weather.daily
 
-            val bars = if (dailyBlock == null) emptyList() else coroutineScope {
-                dailyBlock.time.take(6).mapIndexed { i, dateStr ->
+            val rawBars = if (dailyBlock == null) emptyList() else coroutineScope {
+                dailyBlock.time.take(7).mapIndexed { i, dateStr ->
                     async {
                         val date = runCatching { LocalDate.parse(dateStr) }.getOrNull()
                             ?: LocalDate.now().plusDays(i.toLong())
@@ -132,42 +133,71 @@ class ForecastRepository(
                         WeeklyBar(
                             dayLabel = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.US),
                             thisWeekTemp = thisWeekTemp,
-                            historicalAvgTemp = histAvg,
-                            isHighlighted = date.dayOfWeek == DayOfWeek.SATURDAY
+                            historicalAvgTemp = histAvg
                         )
                     }
                 }.map { it.await() }
             }
 
-            val heatWarning = bars.any { it.thisWeekTemp - it.historicalAvgTemp >= 5.0 }
+            // --- Bar highlighting: still based on the single most extreme day (unchanged) ---
+            val maxDeviationIndex = rawBars.indices.maxByOrNull { i ->
+                kotlin.math.abs(rawBars[i].thisWeekTemp - rawBars[i].historicalAvgTemp)
+            } ?: -1
 
-            HistoricalUiState(bars = bars, heatWarning = heatWarning)
+            val bars = rawBars.mapIndexed { index, bar ->
+                bar.copy(isHighlighted = index == maxDeviationIndex)
+            }
+
+            // --- Message/type: now based on the WEEK'S AVERAGE deviation, not just one day ---
+            val avgDeviation = if (bars.isEmpty()) 0.0
+            else bars.map { it.thisWeekTemp - it.historicalAvgTemp }.average()
+
+            val (insightMessage, insightType) = when {
+                avgDeviation >= 3.0 ->
+                    "Temperatures this week are projected to be significantly above the 10-year average. Hydration and shade recommended." to InsightType.WARMER
+                avgDeviation <= -3.0 ->
+                    "Temperatures this week are projected to be significantly below the 10-year average. Dress warmly." to InsightType.COOLER
+                else ->
+                    "This week's temperatures are tracking close to the 10-year average." to InsightType.NEUTRAL
+            }
+
+            HistoricalUiState(
+                bars = bars,
+                insightMessage = insightMessage,
+                insightType = insightType
+            )
         }
 
     private suspend fun averageHistoricalMax(lat: Double, lon: Double, date: LocalDate): Double {
         val fmt = DateTimeFormatter.ISO_LOCAL_DATE
-        val endYear = date.minusYears(1)   // archive data lags behind "today"
-        val startYear = date.minusYears(30)
-
-        val response = runCatching {
-            archiveApi.getArchive(
-                lat = lat,
-                lon = lon,
-                startDate = startYear.withDayOfYear(1).format(fmt),
-                endDate = endYear.withMonth(12).withDayOfMonth(31).format(fmt)
-            )
-        }.getOrNull() ?: return 0.0
-
         val targetMonth = date.monthValue
         val targetDay = date.dayOfMonth
 
-        val matches = response.daily.time.indices.filter { i ->
-            val d = LocalDate.parse(response.daily.time[i])
-            val dayDiff = kotlin.math.abs(d.dayOfYear - date.withYear(d.year).dayOfYear)
-            (d.monthValue == targetMonth && kotlin.math.abs(d.dayOfMonth - targetDay) <= 3) || dayDiff <= 3
-        }.mapNotNull { response.daily.temperature_2m_max.getOrNull(it) ?: null }
+        // Fetch only a +-3 day window around this date, across 10 past years —
+        val results = coroutineScope {
+            (1..10).map { yearsAgo ->
+                async {
+                    val yearDate = date.minusYears(yearsAgo.toLong())
+                    val windowStart = yearDate.minusDays(3)
+                    val windowEnd = yearDate.plusDays(3)
 
-        return if (matches.isEmpty()) 0.0 else matches.filterNotNull().average()
+                    runCatching {
+                        archiveApi.getArchive(
+                            lat = lat,
+                            lon = lon,
+                            startDate = windowStart.format(fmt),
+                            endDate = windowEnd.format(fmt)
+                        )
+                    }.getOrNull()
+                }
+            }.awaitAll()
+        }
+
+        val allTemps = results.filterNotNull().flatMap { response ->
+            response.daily.temperature_2m_max.filterNotNull()
+        }
+
+        return if (allTemps.isEmpty()) 0.0 else allTemps.average()
     }
 
     private fun formatHourLabel(hour24: Int): String {

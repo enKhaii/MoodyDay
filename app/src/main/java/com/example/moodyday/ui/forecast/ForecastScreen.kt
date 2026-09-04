@@ -21,9 +21,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -271,7 +273,7 @@ fun ForecastScreen(
                                         )
                                         Spacer(Modifier.height(4.dp))
                                         Text(
-                                            text = "Comparing this week to the 30-year climate norm.",
+                                            text = "Comparing this week to the 10-year climate norm.",
                                             fontSize = 12.sp,
                                             color = Color(0xFF64748B),
                                             lineHeight = 16.sp
@@ -285,7 +287,7 @@ fun ForecastScreen(
                                         modifier = Modifier.padding(top = 4.dp)
                                     ) {
                                         LegendDot(color = Color(0xFF005B82), label = "This\nWeek")
-                                        LegendDot(color = Color(0xFFD1D5DB), label = "30-Yr\nAvg")
+                                        LegendDot(color = Color(0xFFD1D5DB), label = "10-Yr\nAvg")
                                     }
                                 }
 
@@ -331,32 +333,42 @@ fun ForecastScreen(
                         }
                     }
 
-                    if (historicalState.heatWarning) {
-                        item {
-                            Card(
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFE4E6)),
-                                shape = RoundedCornerShape(12.dp),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                                modifier = Modifier.padding(horizontal = 20.dp)
+                    val (iconType, insightColor) = when (historicalState.insightType) {
+                        InsightType.WARMER -> Icons.Default.WarningAmber to Color(0xFFD32F2F)
+                        InsightType.COOLER -> Icons.Default.AcUnit to Color(0xFF0284C7)
+                        InsightType.NEUTRAL -> Icons.Default.CheckCircle to Color(0xFF16A34A)
+                    }
+
+                    val cardBg = when (historicalState.insightType) {
+                        InsightType.WARMER -> Color(0xFFFFE4E6)
+                        InsightType.COOLER -> Color(0xFFE0F2FE)
+                        InsightType.NEUTRAL -> Color(0xFFDCFCE7)
+                    }
+
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = cardBg),
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                            modifier = Modifier.padding(horizontal = 20.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.Top
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(14.dp),
-                                    verticalAlignment = Alignment.Top
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.WarningAmber,
-                                        contentDescription = "Warning",
-                                        tint = WarningText,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Spacer(Modifier.width(10.dp))
-                                    Text(
-                                        text = "Temperatures this weekend are projected to be significantly above the 30-year average. Hydration and shade recommended.",
-                                        color = WarningText,
-                                        fontSize = 13.sp,
-                                        lineHeight = 18.sp
-                                    )
-                                }
+                                Icon(
+                                    imageVector = iconType,
+                                    contentDescription = "Insight",
+                                    tint = insightColor,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Text(
+                                    text = historicalState.insightMessage,
+                                    color = insightColor,
+                                    fontSize = 13.sp,
+                                    lineHeight = 18.sp
+                                )
                             }
                         }
                     }
@@ -497,8 +509,9 @@ private fun DailyRow(
             modifier = Modifier.width(28.dp)
         )
 
+        // Rain Percentage
         Text(
-            text = "UV ${day.uvIndexMax.roundToInt() * 10}%",
+            text = "${day.rainChancePercent}%",
             fontSize = 12.sp,
             color = Color(0xFF64748B),
             modifier = Modifier.width(36.dp)
@@ -506,6 +519,7 @@ private fun DailyRow(
 
         Spacer(Modifier.width(8.dp))
 
+        // Min Temp (aligned right toward the bar)
         Text(
             text = "${day.tempMin}°",
             fontSize = 14.sp,

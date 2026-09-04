@@ -1,31 +1,75 @@
 package com.example.moodyday.ui.tips
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Checkroom
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.moodyday.ui.theme.MoodyDayTheme
+import com.example.moodyday.ui.weather.SelectedCityViewModel
 
 @Composable
 fun TipsScreen(
-    viewModel: TipsViewModel = viewModel()
+    viewModel: TipsViewModel = viewModel(),
+    selectedCityViewModel: SelectedCityViewModel
 ) {
     val state by viewModel.uiState.collectAsState()
+    val selectedCity by selectedCityViewModel.selectedCity.collectAsState()
+
+    // Trigger loadTipsForCity whenever the tracked city changes
+    LaunchedEffect(key1 = selectedCity) {
+        viewModel.loadTipsForCity(selectedCity.lat, selectedCity.lon)
+    }
+
     TipsScreenContent(
         state = state,
         onMarkTipDone = { viewModel.markTipAsDone(it) }
@@ -106,7 +150,7 @@ fun WeeklyGoalCard(progress: Int, total: Int) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Weekly Goal", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("Weekly Goal", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
             Text(
                 "Complete $total actions to maintain your streak.",
                 fontSize = 12.sp,
@@ -133,10 +177,17 @@ fun WeeklyGoalCard(progress: Int, total: Int) {
 
 @Composable
 fun TipCard(tip: ClimateTip, onMarkDone: () -> Unit) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        label = "ArrowRotation"
+    )
+
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -165,10 +216,59 @@ fun TipCard(tip: ClimateTip, onMarkDone: () -> Unit) {
             }
             
             Spacer(Modifier.height(12.dp))
-            Text(tip.title, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(tip.title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
             Spacer(Modifier.height(4.dp))
-            Text(tip.description, fontSize = 13.sp, color = Color.DarkGray)
-            
+            Text(tip.description, fontSize = 13.sp, color = Color(0xFF64748B), lineHeight = 18.sp)
+
+            AnimatedVisibility(visible = isExpanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 14.dp)
+                ) {
+                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (tip.impact.isNotBlank()) {
+                        Text(
+                            text = "WHY IT MATTERS",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF006494),
+                            letterSpacing = 0.5.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = tip.impact,
+                            fontSize = 12.sp,
+                            color = Color(0xFF475569),
+                            lineHeight = 16.sp
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+
+                    if (tip.steps.isNotEmpty()) {
+                        Text(
+                            text = "HOW TO DO IT",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF006494),
+                            letterSpacing = 0.5.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        tip.steps.forEach { step ->
+                            Row(
+                                modifier = Modifier.padding(vertical = 2.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Text("• ", fontSize = 12.sp, color = Color(0xFF006494), fontWeight = FontWeight.Bold)
+                                Text(step, fontSize = 12.sp, color = Color(0xFF475569), lineHeight = 16.sp)
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(Modifier.height(16.dp))
             
             if (!tip.isCompleted) {
@@ -178,14 +278,38 @@ fun TipCard(tip: ClimateTip, onMarkDone: () -> Unit) {
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF003D61))
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = Color.White
+                    )
                     Spacer(Modifier.width(8.dp))
-                    Text("Mark as Done")
+                    Text(
+                        text = "Mark as Done",
+                        color = Color.White
+                    )
                 }
                 
-                TextButton(onClick = { /* Learn more */ }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                    Text("Learn More", fontSize = 12.sp, color = Color.Gray)
-                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.Gray)
+                TextButton(
+                    onClick = {
+                        isExpanded = !isExpanded
+                    },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text(
+                        text = if (isExpanded) "Show Less" else "Learn More",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(14.dp)
+                            .rotate(arrowRotation),
+                        tint = Color.Gray)
                 }
             } else {
                 Text(
@@ -216,40 +340,5 @@ fun OutfitRecommendationCard(title: String, recommendation: String) {
             Spacer(Modifier.height(8.dp))
             Text(recommendation, fontSize = 14.sp, color = Color(0xFF1E293B))
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TipsScreenPreview() {
-    val sampleState = TipsUiState(
-        weeklyGoalProgress = 3,
-        weeklyGoalTotal = 5,
-        outfitTitle = "Cool Breeze Ahead",
-        outfitRecommendation = "A light jacket or sweater over your t-shirt would be a good idea.",
-        tips = listOf(
-            ClimateTip(
-                id = "1",
-                title = "Skip the dryer today",
-                description = "With clear skies and low humidity expected, line-drying clothes is highly efficient today.",
-                icon = "sunny",
-                category = "HIGH SOLAR POTENTIAL",
-                isCompleted = false
-            ),
-            ClimateTip(
-                id = "2",
-                title = "Pre-cool your home",
-                description = "Temperatures will peak at 32°C by 3 PM. Open windows now while it's cooler.",
-                icon = "temp",
-                category = "TEMPERATURE ALERT",
-                isCompleted = true
-            )
-        )
-    )
-    MoodyDayTheme {
-        TipsScreenContent(
-            state = sampleState,
-            onMarkTipDone = {}
-        )
     }
 }

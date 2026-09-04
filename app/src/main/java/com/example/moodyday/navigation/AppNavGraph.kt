@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.moodyday.MoodyDayApplication
 import com.example.moodyday.ui.alerts.AlertsScreen
+import com.example.moodyday.ui.alerts.AlertsViewModel
 import com.example.moodyday.ui.auth.LoginScreen
 import com.example.moodyday.ui.auth.RegisterScreen
 import com.example.moodyday.ui.forecast.ForecastScreen
@@ -93,11 +94,18 @@ fun AppNavGraph(
                 selectedCityViewModel = selectedCityViewModel
             )
         }
-        composable(route = NavRoutes.Alerts.route) {
-            AlertsScreen()
+        composable(route = NavRoutes.Alerts.route) { backStackEntry ->
+            val alertsViewModel: AlertsViewModel = viewModel(backStackEntry)
+            AlertsScreen(
+                viewModel = alertsViewModel,
+                selectedCityViewModel = selectedCityViewModel,
+                onNavigateToTips = { navController.navigateToTab(NavRoutes.Tips.route) }
+            )
         }
         composable(route = NavRoutes.Tips.route) {
-            TipsScreen()
+            TipsScreen(
+                selectedCityViewModel = selectedCityViewModel
+            )
         }
         composable(route = NavRoutes.Goals.route) {
             val goalsViewModel: GoalsViewModel = viewModel {
