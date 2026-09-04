@@ -233,38 +233,6 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Reset Progress Outlined Button
-            OutlinedButton(
-                onClick = {
-                    viewModel.resetProgress()
-                    Toast.makeText(context, "Progress has been reset!", Toast.LENGTH_SHORT).show()
-                },
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, Color(0xFFEF4444)),
-                colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.Transparent),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Outlined.Delete,
-                        contentDescription = null,
-                        tint = Color(0xFFEF4444),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Reset Progress",
-                        color = Color(0xFFEF4444),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
             // Log Out Button
             Button(
                 onClick = {

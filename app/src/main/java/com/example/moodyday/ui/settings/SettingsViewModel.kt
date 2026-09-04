@@ -86,13 +86,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun resetProgress() {
-        viewModelScope.launch {
-            settingsDao.deleteSettings(userId)
-            _completedGoalsCount.value = 0
-        }
-    }
-
     fun logout(onLoggedOut: () -> Unit) {
         viewModelScope.launch {
             try {
