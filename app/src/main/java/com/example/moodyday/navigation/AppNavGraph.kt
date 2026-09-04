@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.moodyday.MoodyDayApplication
+import com.example.moodyday.data.auth.SessionManager
 import com.example.moodyday.ui.alerts.AlertsScreen
 import com.example.moodyday.ui.alerts.AlertsViewModel
 import com.example.moodyday.ui.auth.LoginScreen
@@ -19,8 +20,7 @@ import com.example.moodyday.ui.forecast.ForecastViewModel
 import com.example.moodyday.ui.goals.GoalsScreen
 import com.example.moodyday.ui.goals.GoalsViewModel
 import com.example.moodyday.ui.settings.SettingsScreen
-import com.example.moodyday.ui.settings.SettingsViewModel
-import com.example.moodyday.ui.splash.AnimatedSplashScreen
+import com.example.moodyday.ui.splash.LoadingScreen
 import com.example.moodyday.ui.tips.TipsScreen
 import com.example.moodyday.ui.user.OnboardingScreen
 import com.example.moodyday.ui.user.ProfileScreen
@@ -39,30 +39,49 @@ fun AppNavGraph(
 ) {
     val context = LocalContext.current
     val appContainer = (context.applicationContext as MoodyDayApplication).container
-    val testUserId = "chongwc"
+    val userId = SessionManager.currentUserId ?: ""
 
     val selectedCityViewModel: SelectedCityViewModel = viewModel()
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry?.destination?.route
+    val startDestination = if (SessionManager.currentUserId != null) {
+        NavRoutes.Home.route
+    } else {
+        NavRoutes.Splash.route
+    }
 
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.Home.route,
+        startDestination = startDestination,
         modifier = modifier
     ) {
         composable(route = NavRoutes.Splash.route) {
-            AnimatedSplashScreen(navController)
+            LoadingScreen(navController = navController)
         }
         composable(route = NavRoutes.Onboarding.route) {
             OnboardingScreen(navController = navController)
         }
         composable(route = NavRoutes.Login.route) {
-            LoginScreen(navController = navController)
+            LoginScreen(
+                onNavigateToRegister = {
+                    navController.navigate(NavRoutes.Register.route)
+                },
+                onNavigateToHome = {
+                    navController.navigate(NavRoutes.Home.route) {
+                        popUpTo(NavRoutes.Login.route) { inclusive = true }
+                    }
+                }
+            )
         }
         composable(route = NavRoutes.Register.route) {
             RegisterScreen(
-                onNavigateToLogin = { navController.navigate(NavRoutes.Login.route) },
-                onRegisterSuccess = { navController.navigate(NavRoutes.Home.route) }
+                onNavigateToLogin = {
+                    navController.popBackStack()
+                },
+                onRegisterSuccess = {
+                    navController.navigate(NavRoutes.Home.route) {
+                        popUpTo(NavRoutes.Login.route) { inclusive = true }
+                    }
+                }
             )
         }
         composable(route = NavRoutes.Home.route) {
@@ -79,7 +98,7 @@ fun AppNavGraph(
                 viewModel = viewModel {
                     CitySearchViewModel(
                         repository = appContainer.savedCityRepository,
-                        userId = testUserId
+                        userId = userId
                     )
                 },
                 selectedCityViewModel = selectedCityViewModel,
@@ -112,7 +131,7 @@ fun AppNavGraph(
                 GoalsViewModel(
                     goalDao = appContainer.goalDao,
                     userStreakDao = appContainer.userStreakDao,
-                    userId = testUserId,
+                    userId = userId,
                     selectedCityViewModel = selectedCityViewModel
                 )
             }
@@ -122,14 +141,13 @@ fun AppNavGraph(
             )
         }
         composable(route = NavRoutes.Settings.route) {
-            val settingsViewModel: SettingsViewModel = viewModel {
-                SettingsViewModel(
-                    settingsDao = appContainer.userSettingsDao,
-                    userId = testUserId
-                )
-            }
             SettingsScreen(
-                viewModel = settingsViewModel
+                onBackClick = { navController.popBackStack() },
+                onLogoutClick = {
+                    navController.navigate(NavRoutes.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             )
         }
         composable(route = "profile_route") {

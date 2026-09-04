@@ -112,6 +112,7 @@ fun TipsScreenContent(
                     item {
                         Spacer(modifier = Modifier.height(24.dp))
                         Text("Daily Actions", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text("Weather-linked suggestions to reduce your environmental impact today.", fontSize = 14.sp, color = Color(0xFF475569))
                     }
 

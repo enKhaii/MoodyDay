@@ -2,6 +2,7 @@ package com.example.moodyday.ui.goals
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.moodyday.data.auth.SessionManager
 import com.example.moodyday.data.local.dao.GoalDao
 import com.example.moodyday.data.local.dao.UserStreakDao
 import com.example.moodyday.data.local.entities.GoalEntity
@@ -27,7 +28,7 @@ import kotlin.math.roundToInt
 class GoalsViewModel(
     private val goalDao: GoalDao,
     private val userStreakDao: UserStreakDao,
-    private val userId: String = "chongwc",
+    private val userId: String = SessionManager.currentUserId ?: "",
     private val weatherApi: WeatherApi = RetrofitProvider.weatherApi,
     private val selectedCityViewModel: SelectedCityViewModel? = null
 ) : ViewModel() {

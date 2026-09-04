@@ -3,6 +3,7 @@ package com.example.moodyday.ui.forecast
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.moodyday.data.auth.SessionManager
 import com.example.moodyday.data.local.AppDatabase
 import com.example.moodyday.data.local.entities.SavedCityEntity
 import com.example.moodyday.data.remote.RetrofitProvider
@@ -30,8 +31,7 @@ class ForecastViewModel @JvmOverloads constructor(
     private val savedCityRepository = SavedCityRepository(db.savedCityDao())
     private val climateNoteRepository = ClimateNoteRepository(db.climateNoteDao())
 
-    // TODO: replace with the real signed-in user's id once auth is wired up.
-    private val userId = "local-user"
+    private val userId = SessionManager.currentUserId ?: ""
 
     private val _notes = MutableStateFlow<Map<String, String>>(emptyMap())
     val notes: StateFlow<Map<String, String>> = _notes.asStateFlow()
