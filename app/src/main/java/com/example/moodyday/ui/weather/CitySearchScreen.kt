@@ -238,7 +238,7 @@ fun CitySearchScreen(
                 }
             } else {
                 Text(
-                    text = "RECENT CITIES",
+                    text = "SAVED CITIES",
                     fontSize = 11.sp,
                     color = Color(0xFF64748B),
                     fontWeight = FontWeight.Bold,
