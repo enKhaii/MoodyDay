@@ -112,7 +112,8 @@ fun AppNavGraph(
                 GoalsViewModel(
                     goalDao = appContainer.goalDao,
                     userStreakDao = appContainer.userStreakDao,
-                    userId = testUserId
+                    userId = testUserId,
+                    selectedCityViewModel = selectedCityViewModel
                 )
             }
             GoalsScreen(

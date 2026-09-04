@@ -11,6 +11,11 @@ data class GoalEntity(
     val cityId: Long?,
     val text: String,
     val weatherCondition: String?,
+    val category: String = "Transport",
+    val frequency: String = "Daily",
+    val targetCo2: String = "2.0 kg CO₂",
+    val reminderEnabled: Boolean = false,
     val isCompleted: Boolean = false,
-    val createdAt: String
+    val createdAt: String,
+    val completedAt: String? = null
 )

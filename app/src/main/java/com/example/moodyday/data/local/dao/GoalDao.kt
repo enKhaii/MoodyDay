@@ -22,6 +22,9 @@ interface GoalDao {
     @Delete
     suspend fun deleteGoal(goal: GoalEntity)
 
+    @Query("DELETE FROM goals WHERE id = :goalId")
+    suspend fun deleteGoalById(goalId: Long)
+
     @Query("UPDATE goals SET supabaseId = :supabaseId WHERE id = :localId")
     suspend fun updateSupabaseId(localId: Long, supabaseId: Long?)
 }

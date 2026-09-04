@@ -24,10 +24,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+
 @Composable
 fun AppTopBar(
     streakCount: Int,
     onSettingsClick: () -> Unit,
+    onStreakClick: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -39,17 +44,24 @@ fun AppTopBar(
     ) {
         Row(
             modifier = Modifier
-                .align(Alignment.CenterStart),
+                .align(Alignment.CenterStart)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { onStreakClick() }
+                .padding(horizontal = 6.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.LocalFireDepartment,
                 contentDescription = "Streak",
-                tint = Color(0xFFEA580C),
+                tint = if (streakCount > 0) Color(0xFFEA580C) else Color(0xFF94A3B8),
                 modifier = Modifier.size(22.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
-            Text("$streakCount", fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
+            Text(
+                text = "$streakCount",
+                fontWeight = FontWeight.Bold,
+                color = if (streakCount > 0) Color(0xFF1E293B) else Color(0xFF94A3B8)
+            )
         }
 
         Text(
