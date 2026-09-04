@@ -51,12 +51,38 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import com.example.moodyday.MoodyDayApplication
+import java.time.LocalDate
+
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
     // Observe current route
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    val context = LocalContext.current
+    val appContainer = (context.applicationContext as MoodyDayApplication).container
+    val testUserId = "chongwc"
+
+    val userStreakEntity by appContainer.userStreakDao.getUserStreak(testUserId)
+        .collectAsState(initial = null)
+
+    val streakCount = remember(userStreakEntity) {
+        val entity = userStreakEntity
+        if (entity == null) 0
+        else {
+            val todayStr = LocalDate.now().toString()
+            val yesterdayStr = LocalDate.now().minusDays(1).toString()
+            if (entity.lastCompletedDate == todayStr || entity.lastCompletedDate == yesterdayStr) {
+                entity.currentStreak
+            } else {
+                0
+            }
+        }
+    }
 
     // Check if current route matches the BottomNavBar items
     // Bottom and Top Bar uses the SAME items because it's the same 5 screens
@@ -66,8 +92,9 @@ fun MainScreen() {
         topBar = {
             if (showBars) {
                 AppTopBar(
-                    streakCount = 0,     // CONNECT TO REAL VERSION AFTER IMPLEMENTED!!
-                    onSettingsClick = { navController.navigate(NavRoutes.Settings.route) }
+                    streakCount = streakCount,
+                    onSettingsClick = { navController.navigate(NavRoutes.Settings.route) },
+                    onStreakClick = { navController.navigateToTab(NavRoutes.Goals.route) }
                 )
             }
         },
