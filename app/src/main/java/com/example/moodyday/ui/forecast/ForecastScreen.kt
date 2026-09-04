@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -131,9 +134,7 @@ fun ForecastScreen(
                 }
 
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 20.dp),
+                    modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     item { Spacer(modifier = Modifier.height(24.dp)) }
@@ -142,7 +143,9 @@ fun ForecastScreen(
                     item {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
                         ) {
                             Text(
                                 text = if (!homeState.countryCode.isNullOrEmpty()) {
@@ -164,19 +167,29 @@ fun ForecastScreen(
                         }
                     }
 
-                    // Now & Hourly Tiles
+                    // Now & Hourly Dynamic Scrollable Carousel
                     item {
-                        Row(
+                        LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = 20.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            NowTile(
-                                homeState.nowTempF,
-                                homeState.nowWeatherCode,
-                                modifier = Modifier.weight(1.3f)
-                            )
-                            homeState.hourly.take(3).forEach { hp ->
-                                HourTile(hp, modifier = Modifier.weight(1f))
+                            item {
+                                NowTile(
+                                    temp = homeState.nowTempF,
+                                    weatherCode = homeState.nowWeatherCode,
+                                    modifier = Modifier.width(90.dp)
+                                )
+                            }
+
+                            items(
+                                items = homeState.hourly,
+                                key = { it.label }
+                            ) { hp ->
+                                HourTile(
+                                    point = hp,
+                                    modifier = Modifier.width(84.dp)
+                                )
                             }
                         }
                     }
@@ -187,20 +200,22 @@ fun ForecastScreen(
                             text = "7-Day Outlook",
                             fontSize = 20.sp,
                             color = Color(0xFF1E293B),
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 20.dp)
                         )
                     }
 
                     val overallMin = homeState.daily.minOfOrNull { it.tempMin } ?: 0
-                    val overallMax =
-                        homeState.daily.maxOfOrNull { it.tempMax } ?: 1 // Fixed tempMax lookup
+                    val overallMax = homeState.daily.maxOfOrNull { it.tempMax } ?: 1
 
                     item {
                         Card(
                             shape = RoundedCornerShape(20.dp),
                             colors = CardDefaults.cardColors(containerColor = Color.White),
                             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
                         ) {
                             Column(
                                 modifier = Modifier
@@ -232,7 +247,9 @@ fun ForecastScreen(
                             shape = RoundedCornerShape(20.dp),
                             colors = CardDefaults.cardColors(containerColor = Color.White),
                             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
                         ) {
                             Column(
                                 modifier = Modifier
@@ -299,9 +316,7 @@ fun ForecastScreen(
                                         Button(
                                             onClick = { viewModel.refresh() }
                                         ) {
-                                            Text(
-                                                text = "Reload"
-                                            )
+                                            Text(text = "Reload")
                                         }
                                     }
                                 } else {
@@ -321,7 +336,8 @@ fun ForecastScreen(
                             Card(
                                 colors = CardDefaults.cardColors(containerColor = Color(0xFFFFE4E6)),
                                 shape = RoundedCornerShape(12.dp),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                                modifier = Modifier.padding(horizontal = 20.dp)
                             ) {
                                 Row(
                                     modifier = Modifier.padding(14.dp),
@@ -362,7 +378,7 @@ private fun NowTile(temp: Int, weatherCode: Int, modifier: Modifier = Modifier) 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(vertical = 16.dp),
+                .padding(vertical = 16.dp, horizontal = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -378,7 +394,7 @@ private fun NowTile(temp: Int, weatherCode: Int, modifier: Modifier = Modifier) 
             Text(
                 text = "$temp°",
                 color = Color.White,
-                fontSize = 28.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -396,21 +412,20 @@ private fun HourTile(point: HourlyPoint, modifier: Modifier = Modifier) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(vertical = 16.dp),
+                .padding(vertical = 16.dp, horizontal = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = point.label,
                 fontSize = 13.sp,
-                color = Color(0xFF64748B)
+                color = Color(0xFF64748B),
+                maxLines = 1
             )
-
             Text(
                 text = WeatherCodeTranslator.toEmoji(point.weatherCode),
                 fontSize = 28.sp
             )
-
             Text(
                 text = "${point.tempF}°",
                 fontSize = 20.sp,
@@ -467,7 +482,6 @@ private fun DailyRow(
             .padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Day Label
         Text(
             text = day.label,
             modifier = Modifier.width(48.dp),
@@ -476,7 +490,6 @@ private fun DailyRow(
             fontSize = 14.sp
         )
 
-        // Weather Emoji
         Text(
             text = WeatherCodeTranslator.toEmoji(day.weatherCode),
             fontSize = 18.sp,
@@ -484,7 +497,6 @@ private fun DailyRow(
             modifier = Modifier.width(28.dp)
         )
 
-        // UV Index
         Text(
             text = "UV ${day.uvIndexMax.roundToInt() * 10}%",
             fontSize = 12.sp,
@@ -494,7 +506,6 @@ private fun DailyRow(
 
         Spacer(Modifier.width(8.dp))
 
-        // Min Temp (aligned right toward the bar)
         Text(
             text = "${day.tempMin}°",
             fontSize = 14.sp,
@@ -505,7 +516,6 @@ private fun DailyRow(
 
         Spacer(Modifier.width(12.dp))
 
-        // Min-Max Range Bar
         MinMaxBar(
             min = day.tempMin,
             max = day.tempMax,
@@ -518,7 +528,6 @@ private fun DailyRow(
 
         Spacer(Modifier.width(12.dp))
 
-        // Max Temp (aligned left away from the bar)
         Text(
             text = "${day.tempMax}°",
             fontSize = 14.sp,
@@ -528,7 +537,6 @@ private fun DailyRow(
             modifier = Modifier.width(32.dp)
         )
 
-        // Action / Note Button
         Box(
             modifier = Modifier
                 .size(24.dp)
@@ -553,7 +561,7 @@ private fun LegendDot(color: Color, label: String) {
                 .size(8.dp)
                 .background(color, shape = CircleShape)
         )
-            Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.width(6.dp))
         Text(
             text = label,
             fontSize = 11.sp,
@@ -583,11 +591,10 @@ private fun BarChart(bars: List<WeeklyBar>, modifier: Modifier = Modifier) {
     )
 
     Box(modifier = modifier) {
-        // 1. Grid Lines and Y-Axis Labels
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 24.dp), // Leaves room for X-axis labels below
+                .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             yAxisLabels.forEach { label ->
@@ -608,7 +615,6 @@ private fun BarChart(bars: List<WeeklyBar>, modifier: Modifier = Modifier) {
                     )
                 }
             }
-            // Bottom baseline for the grid
             Spacer(modifier = Modifier.height(0.dp))
         }
 
@@ -621,12 +627,10 @@ private fun BarChart(bars: List<WeeklyBar>, modifier: Modifier = Modifier) {
             ) {
                 val barGroupWidth = size.width / bars.size
 
-                // Use dp.toPx() so the bars are cleanly sized on all screen densities
                 val barWidth = 10.dp.toPx()
                 val intraBarGap = 4.dp.toPx()
 
                 val totalBarsWidth = (barWidth * 2) + intraBarGap
-                // Centers the pair of bars within each day's column slot
                 val groupPadding = (barGroupWidth - totalBarsWidth) / 2f
 
                 bars.forEachIndexed { index, bar ->
@@ -634,11 +638,9 @@ private fun BarChart(bars: List<WeeklyBar>, modifier: Modifier = Modifier) {
                     val thisWeekColor =
                         if (bar.isHighlighted) Color(0xFFD9534F) else Color(0xFF005B82)
 
-                    // Calculate heights strictly based on the dynamic range
                     val thisWeekHeight = ((bar.thisWeekTemp.toFloat() - chartMin) / effectiveRange).coerceIn(0f, 1f) * size.height
                     val histHeight = ((bar.historicalAvgTemp.toFloat() - chartMin) / effectiveRange).coerceIn(0f, 1f) * size.height
 
-                    // This Week bar
                     drawRoundRect(
                         color = thisWeekColor,
                         topLeft = Offset(groupX + groupPadding, size.height - thisWeekHeight),
@@ -646,7 +648,6 @@ private fun BarChart(bars: List<WeeklyBar>, modifier: Modifier = Modifier) {
                         cornerRadius = CornerRadius(barWidth / 2, barWidth / 2)
                     )
 
-                    // Historical average bar
                     drawRoundRect(
                         color = BarGray,
                         topLeft = Offset(
@@ -659,7 +660,6 @@ private fun BarChart(bars: List<WeeklyBar>, modifier: Modifier = Modifier) {
                 }
             }
 
-            // 3. X-Axis Labels
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

@@ -16,6 +16,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -45,7 +46,6 @@ class ForecastRepository(
             Triple(result.latitude, result.longitude, label)
         }
 
-    /** Up to [count] candidate matches for autocomplete, as the user types. */
     suspend fun searchCities(query: String, count: Int = 5): List<GeocodingResult> =
         withContext(Dispatchers.IO) {
             if (query.isBlank()) return@withContext emptyList()
@@ -53,7 +53,7 @@ class ForecastRepository(
                 .getOrDefault(emptyList())
         }
 
-    /** Current + hourly + daily outlook for the forecast screen. */
+    // Current + hourly + daily outlook for the forecast screen.
     suspend fun getHomeUiState(
         lat: Double,
         lon: Double,
@@ -65,17 +65,26 @@ class ForecastRepository(
             val todayDateStr = weather.daily?.time?.firstOrNull() ?: LocalDate.now().toString()
             val todayDate = runCatching { LocalDate.parse(todayDateStr) }.getOrNull() ?: LocalDate.now()
 
+            // Round down to the current hour so "2:47 PM" still matches the
+            // "2:00 PM" forecast entry instead of skipping straight to 3 PM.
+            val nowDateTime = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0)
+
             val hourly = weather.hourly?.let { hourlyBlock ->
                 hourlyBlock.time
                     .zip(hourlyBlock.temperature_2m)
                     .zip(hourlyBlock.weather_code) { (time, temp), code -> Triple(time, temp, code) }
-                    .filter { (time, _, _) -> time.startsWith(todayDateStr) }
                     .mapNotNull { (time, temp, code) ->
                         runCatching {
-                            val hour = time.substring(11, 13).toInt()
-                            HourlyPoint(label = formatHourLabel(hour), tempF = temp.roundToInt(), weatherCode = code)
+                            val dt = LocalDateTime.parse(time)
+                            if (dt < nowDateTime) return@runCatching null
+                            HourlyPoint(
+                                label = formatHourLabel(dt.hour),
+                                tempF = temp.roundToInt(),
+                                weatherCode = code
+                            )
                         }.getOrNull()
                     }
+                    .take(24) // cap how far ahead we carry; Meteo returns several days of hourly data
             } ?: emptyList()
 
             val daily = weather.daily?.let { dailyBlock ->
@@ -108,11 +117,6 @@ class ForecastRepository(
             )
         }
 
-    /**
-     * This week's forecast max temps vs the 30-year historical average for the
-     * same calendar days. The archive endpoint only has *actuals*, so we average
-     * the same date (+/- 3 days) across the last 30 years to build the norm.
-     */
     suspend fun getHistoricalUiState(lat: Double, lon: Double): HistoricalUiState =
         withContext(Dispatchers.IO) {
             val weather = weatherApi.getWeather(lat, lon, pastDays = 0)
@@ -140,11 +144,6 @@ class ForecastRepository(
             HistoricalUiState(bars = bars, heatWarning = heatWarning)
         }
 
-    /**
-     * Averages temperature_2m_max for the same calendar day (+/- 3 days) across
-     * the last 30 years. One archive request per bar: a 30-year span filtered
-     * client-side to the matching month/day window, rather than 30 separate calls.
-     */
     private suspend fun averageHistoricalMax(lat: Double, lon: Double, date: LocalDate): Double {
         val fmt = DateTimeFormatter.ISO_LOCAL_DATE
         val endYear = date.minusYears(1)   // archive data lags behind "today"
