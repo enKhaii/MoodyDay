@@ -8,6 +8,7 @@ import com.example.moodyday.data.local.AppDatabase
 import com.example.moodyday.data.local.entities.UserSettingsEntity
 import com.example.moodyday.data.remote.supabase
 import io.github.jan.supabase.auth.auth
+import com.example.moodyday.data.repository.SavedCityRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +24,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val settingsDao = db.userSettingsDao()
     private val goalDao = db.goalDao()
     private val cityDao = db.savedCityDao()
+    private val savedCityRepository = SavedCityRepository(cityDao)
 
     private val userId: String = SessionManager.getActiveUserId()
 
@@ -41,6 +43,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     init {
         observeMonthlyGoals()
         observeSavedCities()
+        viewModelScope.launch {
+            try {
+                savedCityRepository.fetchFromRemote(userId)
+            } catch (e: Exception) {
+                // Ignore offline error
+            }
+        }
     }
 
     private fun observeMonthlyGoals() {

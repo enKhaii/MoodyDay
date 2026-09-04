@@ -36,6 +36,12 @@ class CitySearchViewModel(
 
     private var searchJob: Job? = null
 
+    init {
+        viewModelScope.launch {
+            repository.fetchFromRemote(userId)
+        }
+    }
+
     fun onQueryChange(newQuery: String) {
         _query.value = newQuery
         searchJob?.cancel()
