@@ -143,6 +143,10 @@ fun AppNavGraph(
         composable(route = NavRoutes.Settings.route) {
             SettingsScreen(
                 onBackClick = { navController.popBackStack() },
+                onCitySearchClick = {
+                    // Replace with your actual search/city route
+                    navController.navigate(NavRoutes.CitySearch.route)
+                },
                 onLogoutClick = {
                     navController.navigate(NavRoutes.Login.route) {
                         popUpTo(0) { inclusive = true }

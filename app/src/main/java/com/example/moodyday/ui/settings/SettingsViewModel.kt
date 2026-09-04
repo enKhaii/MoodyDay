@@ -5,7 +5,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.moodyday.data.auth.SessionManager
 import com.example.moodyday.data.local.AppDatabase
-import com.example.moodyday.data.local.dao.UserSettingsDao
 import com.example.moodyday.data.local.entities.UserSettingsEntity
 import com.example.moodyday.data.remote.supabase
 import io.github.jan.supabase.auth.auth
@@ -18,25 +17,30 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class SettingsViewModel(
-    application: Application,
-    private val settingsDao: UserSettingsDao = AppDatabase.getDatabase(application).userSettingsDao(),
-    private val userId: String = supabase.auth.currentUserOrNull()?.id ?: SessionManager.currentUserId ?: ""
-) : AndroidViewModel(application) {
+class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val goalDao = AppDatabase.getDatabase(application).goalDao()
+    private val db = AppDatabase.getDatabase(application)
+    private val settingsDao = db.userSettingsDao()
+    private val goalDao = db.goalDao()
+    private val cityDao = db.savedCityDao()
+
+    private val userId: String = supabase.auth.currentUserOrNull()?.id ?: SessionManager.currentUserId ?: "user"
 
     val settingsState: StateFlow<UserSettingsEntity> = settingsDao.getUserSettings(userId)
         .map { it ?: UserSettingsEntity(userId = userId) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserSettingsEntity(userId = userId))
 
-    val userEmail: String = supabase.auth.currentUserOrNull()?.email ?: ""
+    val userEmail: String = supabase.auth.currentUserOrNull()?.email ?: "User"
 
     private val _completedGoalsCount = MutableStateFlow(0)
     val completedGoalsCount: StateFlow<Int> = _completedGoalsCount
 
+    private val _savedCitiesCount = MutableStateFlow(0)
+    val savedCitiesCount: StateFlow<Int> = _savedCitiesCount
+
     init {
         observeMonthlyGoals()
+        observeSavedCities()
     }
 
     private fun observeMonthlyGoals() {
@@ -53,17 +57,22 @@ class SettingsViewModel(
         }
     }
 
+    private fun observeSavedCities() {
+        viewModelScope.launch {
+            try {
+                cityDao.getCitiesForUser(userId).collect { cities ->
+                    _savedCitiesCount.value = cities.size
+                }
+            } catch (e: Exception) {
+                _savedCitiesCount.value = 0
+            }
+        }
+    }
+
     fun toggleNotifications(enabled: Boolean) {
         viewModelScope.launch {
             val current = settingsState.value
             settingsDao.insertOrUpdateSettings(current.copy(notificationsEnabled = enabled))
-        }
-    }
-
-    fun toggleTheme(isDark: Boolean) {
-        viewModelScope.launch {
-            val current = settingsState.value
-            settingsDao.insertOrUpdateSettings(current.copy(theme = if (isDark) "dark" else "system"))
         }
     }
 
