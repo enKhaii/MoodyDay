@@ -10,6 +10,7 @@ data class SavedCityEntity(
     val userId: String,
     val cityName: String,
     val country: String?,
+    val countryCode: String? = null,
     val lat: Double,
     val lon: Double,
     val isHome: Boolean = false,

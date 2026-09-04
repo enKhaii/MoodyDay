@@ -26,7 +26,8 @@ data class WeeklyBar(
 )
 
 data class HomeUiState(
-    val cityLabel: String = "",
+    val cityName: String = "",
+    val countryCode: String? = null,
     val conditionLabel: String = "",
     val nowTempF: Int = 0,
     val apparentTempF: Int = 0,

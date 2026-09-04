@@ -66,6 +66,7 @@ class CitySearchViewModel(
                     userId = userId,
                     cityName = result.name,
                     country = result.country,
+                    countryCode = result.countryCode,
                     lat = result.latitude,
                     lon = result.longitude,
                     sortOrder = savedCities.value.size

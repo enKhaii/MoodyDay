@@ -36,7 +36,12 @@ class ForecastRepository(
         withContext(Dispatchers.IO) {
             val result = geocodingApi.searchCity(cityQuery, count = 1).results?.firstOrNull()
                 ?: throw IllegalStateException("City not found: $cityQuery")
-            val label = listOfNotNull(result.name, result.admin1).joinToString(", ")
+            val label = buildString {
+                append(result.name)
+                if (!result.admin1.isNullOrEmpty()) append(", ${result.admin1}")
+                if (!result.countryCode.isNullOrEmpty()) append(", ${result.countryCode.uppercase()}")
+            }
+
             Triple(result.latitude, result.longitude, label)
         }
 
@@ -49,7 +54,12 @@ class ForecastRepository(
         }
 
     /** Current + hourly + daily outlook for the forecast screen. */
-    suspend fun getHomeUiState(lat: Double, lon: Double, cityLabel: String): HomeUiState =
+    suspend fun getHomeUiState(
+        lat: Double,
+        lon: Double,
+        cityName: String,
+        countryCode: String?
+    ): HomeUiState =
         withContext(Dispatchers.IO) {
             val weather = weatherApi.getWeather(lat, lon, pastDays = 0)
             val todayDateStr = weather.daily?.time?.firstOrNull() ?: LocalDate.now().toString()
@@ -85,7 +95,8 @@ class ForecastRepository(
             } ?: emptyList()
 
             HomeUiState(
-                cityLabel = cityLabel,
+                cityName = cityName,
+                countryCode = countryCode,
                 conditionLabel = WeatherCodeTranslator.toDescription(weather.current.weather_code),
                 nowTempF = weather.current.temperature_2m.roundToInt(),
                 apparentTempF = weather.current.apparent_temperature.roundToInt(),

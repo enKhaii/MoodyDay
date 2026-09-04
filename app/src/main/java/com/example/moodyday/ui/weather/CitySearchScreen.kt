@@ -229,7 +229,7 @@ fun CitySearchScreen(
                             onClick = {
                                 viewModel.saveCity(result)
                                 selectedCityViewModel.selectCity(
-                                    SelectedCity(result.name, result.latitude, result.longitude)
+                                    SelectedCity(result.name, result.latitude, result.longitude, result.countryCode)
                                 )
                                 onCitySelected()
                             }
@@ -269,7 +269,7 @@ fun CitySearchScreen(
                                 onDelete = { viewModel.deleteCity(city) },
                                 onClick = {
                                     selectedCityViewModel.selectCity(
-                                        SelectedCity(city.cityName, city.lat, city.lon)
+                                        SelectedCity(city.cityName, city.lat, city.lon, city.countryCode)
                                     )
                                     onCitySelected()
                                 }

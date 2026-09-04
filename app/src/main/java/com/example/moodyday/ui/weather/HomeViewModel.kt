@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-// CITY IS HARD CODED FOR TESTING, WILL REMOVE IN THE FUTURE
 data class HomeUiState(
     val isLoading: Boolean = true,
     val cityName: String = "Kuala Lumpur",

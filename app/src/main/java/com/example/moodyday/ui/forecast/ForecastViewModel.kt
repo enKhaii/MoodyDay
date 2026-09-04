@@ -53,7 +53,8 @@ class ForecastViewModel @JvmOverloads constructor(
 
     private var lastLat: Double = 3.140853
     private var lastLon: Double = 101.693207
-    private var lastCityLabel: String = "Kuala Lumpur"
+    private var lastCityName: String = "Kuala Lumpur"
+    private var lastCountryCode: String? = "MY"
 
     // Null until this city has been saved to Room (lazily, the first time a
     // note is added — see ensureCitySaved()). Notes require a cityId, so this
@@ -89,18 +90,20 @@ class ForecastViewModel @JvmOverloads constructor(
     fun selectCity(result: GeocodingResult) {
         lastLat = result.latitude
         lastLon = result.longitude
-        lastCityLabel = listOfNotNull(result.name, result.admin1).joinToString(", ")
+        lastCityName = result.name
+        lastCountryCode = result.countryCode
         clearSearch()
         onCityChanged()
     }
 
-    fun loadCity(lat: Double, lon: Double, cityName: String) {
-        if (lastLat == lat && lastLon == lon && lastCityLabel == cityName && !_homeState.value.isLoading && _homeState.value.cityLabel.isNotEmpty()) {
+    fun loadCity(lat: Double, lon: Double, cityName: String, countryCode: String?) {
+        if (lastLat == lat && lastLon == lon && lastCityName == cityName && lastCountryCode == countryCode && !_homeState.value.isLoading) {
             return
         }
         lastLat = lat
         lastLon = lon
-        lastCityLabel = cityName
+        lastCityName = cityName
+        lastCountryCode = countryCode
         onCityChanged()
     }
 
@@ -111,7 +114,10 @@ class ForecastViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             runCatching { repository.geocode(cityQuery) }
                 .onSuccess { (lat, lon, label) ->
-                    lastLat = lat; lastLon = lon; lastCityLabel = label
+                    lastLat = lat
+                    lastLon = lon
+                    lastCityName = label.substringBefore(",")
+                    lastCountryCode = label.substringAfterLast(",", "").trim()
                     onCityChanged()
                 }
                 .onFailure { e ->
@@ -168,8 +174,8 @@ class ForecastViewModel @JvmOverloads constructor(
         val cityId = existing?.id ?: savedCityRepository.addCity(
             SavedCityEntity(
                 userId = userId,
-                cityName = lastCityLabel,
-                country = null,
+                cityName = lastCityName,
+                country = lastCountryCode,
                 lat = lastLat,
                 lon = lastLon
             )
@@ -196,7 +202,7 @@ class ForecastViewModel @JvmOverloads constructor(
 
     private fun loadHome() {
         viewModelScope.launch {
-            runCatching { repository.getHomeUiState(lastLat, lastLon, lastCityLabel) }
+            runCatching { repository.getHomeUiState(lastLat, lastLon, lastCityName, lastCountryCode) }
                 .onSuccess { _homeState.value = it }
                 .onFailure { e ->
                     _homeState.value = _homeState.value.copy(isLoading = false, error = e.message)

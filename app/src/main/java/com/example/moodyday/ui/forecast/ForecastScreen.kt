@@ -20,14 +20,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,10 +51,7 @@ import com.example.moodyday.data.remote.WeatherCodeTranslator
 import com.example.moodyday.ui.weather.SelectedCityViewModel
 import kotlin.math.roundToInt
 
-private val BarBlue = Color(0xFF1565C0)
 private val BarGray = Color(0xFFB0BEC5)
-private val BarRed = Color(0xFFE57373)
-private val WarningBg = Color(0xFFFDEAEA)
 private val WarningText = Color(0xFFC62828)
 
 @Composable
@@ -66,7 +62,7 @@ fun ForecastScreen(
     val selectedCity by selectedCityViewModel.selectedCity.collectAsState()
 
     LaunchedEffect(selectedCity) {
-        viewModel.loadCity(selectedCity.lat, selectedCity.lon, selectedCity.name)
+        viewModel.loadCity(selectedCity.lat, selectedCity.lon, selectedCity.name, selectedCity.countryCode)
     }
 
     val homeState by viewModel.homeState.collectAsState()
@@ -78,8 +74,8 @@ fun ForecastScreen(
 
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFFDFF1FB),
-            Color(0xFFF1F8FB)
+            Color(0xFFEAF5FA),
+            Color(0xFFF4F9FB)
         )
     )
 
@@ -94,7 +90,7 @@ fun ForecastScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = Color(0xFF003D61))
+                    CircularProgressIndicator(color = Color(0xFF005B82))
                 }
             }
 
@@ -119,228 +115,270 @@ fun ForecastScreen(
 
             else -> {
                 noteDialogDay?.let { day ->
-                NoteOverlay(
-                    day = day,
-                    existingNote = notes[day.date],
-                    onDismiss = { noteDialogDay = null },
-                    onSave = { text ->
-                        viewModel.saveNote(day.date, text)
-                        noteDialogDay = null
-                    },
-                    onDelete = {
-                        viewModel.deleteNote(day.date)
-                        noteDialogDay = null
-                    }
-                )
-            }
-
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item { Spacer(modifier = Modifier.height(8.dp)) }
-
-                // City & Overview Header
-                item {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = homeState.cityLabel,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Text(
-                            text = "${homeState.conditionLabel} • ${homeState.nowTempF}° • feels ${homeState.apparentTempF}°",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                // Now & Hourly Tiles
-                item {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        NowTile(
-                            homeState.nowTempF,
-                            homeState.nowWeatherCode,
-                            modifier = Modifier.weight(1.3f)
-                        )
-                        homeState.hourly.take(3).forEach { hp ->
-                            HourTile(hp, modifier = Modifier.weight(1f))
+                    NoteOverlay(
+                        day = day,
+                        existingNote = notes[day.date],
+                        onDismiss = { noteDialogDay = null },
+                        onSave = { text ->
+                            viewModel.saveNote(day.date, text)
+                            noteDialogDay = null
+                        },
+                        onDelete = {
+                            viewModel.deleteNote(day.date)
+                            noteDialogDay = null
                         }
-                    }
-                }
-
-                item {
-                    Text(
-                        text = "7-Day Outlook",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
                     )
                 }
 
-                val overallMin = homeState.daily.minOfOrNull { it.tempMin } ?: 0
-                val overallMax =
-                    homeState.daily.maxOfOrNull { it.tempMax } ?: 1 // Fixed tempMax lookup
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    item { Spacer(modifier = Modifier.height(24.dp)) }
 
-                item {
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                    // City & Overview Header
+                    item {
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 6.dp)
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            homeState.daily.forEachIndexed { index, day ->
-                                DailyRow(
-                                    day = day,
-                                    overallMin = overallMin,
-                                    overallMax = overallMax,
-                                    hasNote = notes.containsKey(day.date),
-                                    onIconClick = { noteDialogDay = day }
-                                )
-                                if (index < homeState.daily.lastIndex) {
-                                    HorizontalDivider(
-                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                                        thickness = 0.5.dp,
-                                        modifier = Modifier.padding(horizontal = 8.dp)
+                            Text(
+                                text = if (!homeState.countryCode.isNullOrEmpty()) {
+                                    "${homeState.cityName}, ${homeState.countryCode!!.uppercase()}"
+                                } else {
+                                    homeState.cityName
+                                },
+                                fontSize = 34.sp,
+                                color = Color(0xFF1E293B),
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "${homeState.conditionLabel} • ${homeState.nowTempF}°",
+                                fontSize = 15.sp,
+                                color = Color(0xFF64748B),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    // Now & Hourly Tiles
+                    item {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            NowTile(
+                                homeState.nowTempF,
+                                homeState.nowWeatherCode,
+                                modifier = Modifier.weight(1.3f)
+                            )
+                            homeState.hourly.take(3).forEach { hp ->
+                                HourTile(hp, modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+
+                    // 7-Day Outlook Header
+                    item {
+                        Text(
+                            text = "7-Day Outlook",
+                            fontSize = 20.sp,
+                            color = Color(0xFF1E293B),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    val overallMin = homeState.daily.minOfOrNull { it.tempMin } ?: 0
+                    val overallMax =
+                        homeState.daily.maxOfOrNull { it.tempMax } ?: 1 // Fixed tempMax lookup
+
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                homeState.daily.forEachIndexed { index, day ->
+                                    DailyRow(
+                                        day = day,
+                                        overallMin = overallMin,
+                                        overallMax = overallMax,
+                                        hasNote = notes.containsKey(day.date),
+                                        onIconClick = { noteDialogDay = day }
+                                    )
+                                    if (index < homeState.daily.lastIndex) {
+                                        HorizontalDivider(
+                                            color = Color(0xFFF1F5F9),
+                                            thickness = 1.dp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Historical Bar Chart Header & Legends
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Temp vs\nHistorical\nAverage",
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF1E293B),
+                                            lineHeight = 26.sp
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            text = "Comparing this week to the 30-year climate norm.",
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF64748B),
+                                            lineHeight = 16.sp
+                                        )
+                                    }
+
+                                    // Legend
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        horizontalAlignment = Alignment.Start,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    ) {
+                                        LegendDot(color = Color(0xFF005B82), label = "This\nWeek")
+                                        LegendDot(color = Color(0xFFD1D5DB), label = "30-Yr\nAvg")
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                // Chart Content
+                                if (historicalState.isLoading && historicalState.bars.isEmpty()) {
+                                    Box(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .height(240.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(color = Color(0xFF005B82))
+                                    }
+                                } else if (historicalState.error != null) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(240.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = "Couldn't load history: ${historicalState.error}",
+                                            color = Color(0xFF1E293B)
+                                        )
+                                        Button(
+                                            onClick = { viewModel.refresh() }
+                                        ) {
+                                            Text(
+                                                text = "Reload"
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    BarChart(
+                                        bars = historicalState.bars,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(260.dp)
                                     )
                                 }
                             }
                         }
                     }
-                }
 
-                // Historical Bar Chart Header & Legends
-                item { Spacer(Modifier.height(8.dp)) }
-
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Temp vs Historical\nAverage",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                LegendDot(color = BarBlue, label = "This Week")
-                                LegendDot(color = BarGray, label = "30-Yr Norm")
-                            }
-                        }
-                        Text(
-                            text = "Comparing this week to the 30-year climate norm.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                item {
-                    if (historicalState.isLoading && historicalState.bars.isEmpty()) {
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(240.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    } else if (historicalState.error != null) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(240.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text("Couldn't load history: ${historicalState.error}")
-                            Spacer(Modifier.height(12.dp))
-                            Button(onClick = { viewModel.refresh() }) { Text("Reload") }
-                        }
-                    } else {
-                        Card(shape = RoundedCornerShape(16.dp)) {
-                            BarChart(
-                                bars = historicalState.bars,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(240.dp)
-                                    .padding(16.dp)
-                            )
-                        }
-                    }
-                }
-
-                if (historicalState.heatWarning) {
-                    item {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = WarningBg),
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Row(Modifier.padding(14.dp), verticalAlignment = Alignment.Top) {
-                                Icon(
-                                    Icons.Default.Warning,
-                                    contentDescription = null,
-                                    tint = WarningText
-                                )
-                                Spacer(Modifier.width(10.dp))
-                                Text(
-                                    "Temperatures this weekend are projected to be significantly above the 30-year average. Hydration and shade recommended.",
-                                    color = WarningText,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                    if (historicalState.heatWarning) {
+                        item {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFE4E6)),
+                                shape = RoundedCornerShape(12.dp),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.WarningAmber,
+                                        contentDescription = "Warning",
+                                        tint = WarningText,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(Modifier.width(10.dp))
+                                    Text(
+                                        text = "Temperatures this weekend are projected to be significantly above the 30-year average. Hydration and shade recommended.",
+                                        color = WarningText,
+                                        fontSize = 13.sp,
+                                        lineHeight = 18.sp
+                                    )
+                                }
                             }
                         }
                     }
+                    item { Spacer(Modifier.height(32.dp)) }
                 }
-
-                item { Spacer(Modifier.height(24.dp)) }
             }
         }
     }
-}
 }
 
 @Composable
 private fun NowTile(temp: Int, weatherCode: Int, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.height(110.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
-        shape = RoundedCornerShape(16.dp)
+        modifier = modifier.height(130.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF005B82)),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = "Now",
-                color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.labelMedium
+                color = Color.White,
+                fontSize = 13.sp
             )
             Text(
                 text = WeatherCodeTranslator.toEmoji(weatherCode),
-                fontSize = 22.sp
+                fontSize = 28.sp
             )
             Text(
                 text = "$temp°",
-                color = MaterialTheme.colorScheme.onPrimary,
-                fontSize = 24.sp,
+                color = Color.White,
+                fontSize = 28.sp,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -350,31 +388,34 @@ private fun NowTile(temp: Int, weatherCode: Int, modifier: Modifier = Modifier) 
 @Composable
 private fun HourTile(point: HourlyPoint, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.height(110.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        shape = RoundedCornerShape(16.dp)
+        modifier = modifier.height(130.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp),
+                .padding(vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = point.label,
-                fontSize = 12.sp
+                fontSize = 13.sp,
+                color = Color(0xFF64748B)
             )
 
             Text(
                 text = WeatherCodeTranslator.toEmoji(point.weatherCode),
-                fontSize = 20.sp
+                fontSize = 28.sp
             )
 
             Text(
                 text = "${point.tempF}°",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
+                fontSize = 20.sp,
+                color = Color(0xFF1E293B),
+                fontWeight = FontWeight.Bold
             )
         }
     }
@@ -395,7 +436,7 @@ private fun MinMaxBar(
     Canvas(modifier = modifier) {
         val trackY = size.height / 2
         drawLine(
-            color = Color.LightGray.copy(alpha = 0.35f),
+            color = Color(0xFFF1F5F9),
             start = Offset(0f, trackY),
             end = Offset(size.width, trackY),
             strokeWidth = size.height,
@@ -403,7 +444,7 @@ private fun MinMaxBar(
         )
 
         drawLine(
-            brush = Brush.horizontalGradient(listOf(Color(0xFF64B5F6), Color(0xFF1565C0))),
+            color = Color(0xFF005B82),
             start = Offset(size.width * startFrac, trackY),
             end = Offset(size.width * endFrac, trackY),
             strokeWidth = size.height,
@@ -423,14 +464,15 @@ private fun DailyRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp, horizontal = 8.dp),
+            .padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Day Label
         Text(
             text = day.label,
             modifier = Modifier.width(48.dp),
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF1E293B),
             fontSize = 14.sp
         )
 
@@ -439,30 +481,29 @@ private fun DailyRow(
             text = WeatherCodeTranslator.toEmoji(day.weatherCode),
             fontSize = 18.sp,
             textAlign = TextAlign.Center,
-            modifier = Modifier.width(30.dp)
+            modifier = Modifier.width(28.dp)
         )
 
         // UV Index
         Text(
-            text = "UV ${day.uvIndexMax.roundToInt()}",
+            text = "UV ${day.uvIndexMax.roundToInt() * 10}%",
             fontSize = 12.sp,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.width(42.dp)
+            color = Color(0xFF64748B),
+            modifier = Modifier.width(36.dp)
         )
 
-        Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.width(8.dp))
 
         // Min Temp (aligned right toward the bar)
         Text(
             text = "${day.tempMin}°",
-            fontSize = 13.sp,
+            fontSize = 14.sp,
             textAlign = TextAlign.End,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(30.dp)
+            color = Color(0xFF64748B),
+            modifier = Modifier.width(32.dp)
         )
 
-        Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.width(12.dp))
 
         // Min-Max Range Bar
         MinMaxBar(
@@ -475,34 +516,29 @@ private fun DailyRow(
                 .height(6.dp)
         )
 
-        Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.width(12.dp))
 
         // Max Temp (aligned left away from the bar)
         Text(
             text = "${day.tempMax}°",
-            fontSize = 13.sp,
+            fontSize = 14.sp,
             textAlign = TextAlign.Start,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.width(30.dp)
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1E293B),
+            modifier = Modifier.width(32.dp)
         )
-
-        Spacer(Modifier.width(8.dp))
 
         // Action / Note Button
         Box(
             modifier = Modifier
-                .size(28.dp)
-                .background(
-                    color = if (hasNote) Color(0xFFE3F2FD) else Color.Transparent,
-                    shape = RoundedCornerShape(8.dp)
-                )
+                .size(24.dp)
                 .clickable(onClick = onIconClick),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = if (hasNote) Icons.Default.EditNote else Icons.Default.Add,
                 contentDescription = if (hasNote) "Edit note" else "Add note",
-                tint = if (hasNote) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = if (hasNote) Color(0xFF005B82) else Color(0xFF64748B),
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -517,8 +553,13 @@ private fun LegendDot(color: Color, label: String) {
                 .size(8.dp)
                 .background(color, shape = CircleShape)
         )
-        Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall)
+            Spacer(Modifier.width(6.dp))
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            color = Color(0xFF64748B),
+            lineHeight = 14.sp
+        )
     }
 }
 
@@ -526,60 +567,114 @@ private fun LegendDot(color: Color, label: String) {
 private fun BarChart(bars: List<WeeklyBar>, modifier: Modifier = Modifier) {
     if (bars.isEmpty()) return
 
-    val maxTemp = bars.maxOf { maxOf(it.thisWeekTemp, it.historicalAvgTemp) }
+    val dataMax = bars.maxOf { maxOf(it.thisWeekTemp.toFloat(), it.historicalAvgTemp.toFloat()) }
+    val dataMin = bars.minOf { minOf(it.thisWeekTemp.toFloat(), it.historicalAvgTemp.toFloat()) }
 
-    Column(modifier = modifier) {
-        Canvas(
+    val chartMax = dataMax + 5f
+    val chartMin = (dataMin - 5f).coerceAtLeast(0f)
+    val effectiveRange = chartMax - chartMin
+
+    val step = effectiveRange / 3
+    val yAxisLabels = listOf(
+        "${chartMax.roundToInt()}°",
+        "${(chartMax - step).roundToInt()}°",
+        "${(chartMax - step * 2).roundToInt()}°",
+        "${chartMin.roundToInt()}°"
+    )
+
+    Box(modifier = modifier) {
+        // 1. Grid Lines and Y-Axis Labels
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
+                .fillMaxSize()
+                .padding(bottom = 24.dp), // Leaves room for X-axis labels below
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            val barGroupWidth = size.width / bars.size
-            val barWidth = barGroupWidth * 0.32f
-            val intraBarGap = barGroupWidth * 0.06f
-            val totalBarsWidth = (barWidth * 2) + intraBarGap
-            // Centers the pair of bars within each day's column slot
-            val groupPadding = (barGroupWidth - totalBarsWidth) / 2f
-
-            bars.forEachIndexed { index, bar ->
-                val groupX = barGroupWidth * index
-                val thisWeekColor = if (bar.isHighlighted) BarRed else BarBlue
-
-                val thisWeekHeight = (bar.thisWeekTemp / maxTemp).toFloat() * size.height
-                val histHeight = (bar.historicalAvgTemp / maxTemp).toFloat() * size.height
-
-                // This Week bar
-                drawRoundRect(
-                    color = thisWeekColor,
-                    topLeft = Offset(groupX + groupPadding, size.height - thisWeekHeight),
-                    size = Size(barWidth, thisWeekHeight),
-                    cornerRadius = CornerRadius(4f, 4f)
-                )
-
-                // Historical average bar
-                drawRoundRect(
-                    color = BarGray,
-                    topLeft = Offset(
-                        groupX + groupPadding + barWidth + intraBarGap,
-                        size.height - histHeight
-                    ),
-                    size = Size(barWidth, histHeight),
-                    cornerRadius = CornerRadius(4f, 4f)
-                )
+            yAxisLabels.forEach { label ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = label,
+                        fontSize = 11.sp,
+                        color = Color(0xFF9CA3AF),
+                        modifier = Modifier.width(32.dp)
+                    )
+                    HorizontalDivider(
+                        color = Color(0xFFE5E7EB),
+                        thickness = 1.dp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
+            // Bottom baseline for the grid
+            Spacer(modifier = Modifier.height(0.dp))
         }
 
-        Spacer(Modifier.height(8.dp))
+        Column(modifier = Modifier.fillMaxSize()) {
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(start = 36.dp, top = 8.dp, bottom = 8.dp)
+            ) {
+                val barGroupWidth = size.width / bars.size
 
-        Row(Modifier.fillMaxWidth()) {
-            bars.forEach { bar ->
-                Text(
-                    text = bar.dayLabel,
-                    modifier = Modifier.weight(1f),
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                // Use dp.toPx() so the bars are cleanly sized on all screen densities
+                val barWidth = 10.dp.toPx()
+                val intraBarGap = 4.dp.toPx()
+
+                val totalBarsWidth = (barWidth * 2) + intraBarGap
+                // Centers the pair of bars within each day's column slot
+                val groupPadding = (barGroupWidth - totalBarsWidth) / 2f
+
+                bars.forEachIndexed { index, bar ->
+                    val groupX = barGroupWidth * index
+                    val thisWeekColor =
+                        if (bar.isHighlighted) Color(0xFFD9534F) else Color(0xFF005B82)
+
+                    // Calculate heights strictly based on the dynamic range
+                    val thisWeekHeight = ((bar.thisWeekTemp.toFloat() - chartMin) / effectiveRange).coerceIn(0f, 1f) * size.height
+                    val histHeight = ((bar.historicalAvgTemp.toFloat() - chartMin) / effectiveRange).coerceIn(0f, 1f) * size.height
+
+                    // This Week bar
+                    drawRoundRect(
+                        color = thisWeekColor,
+                        topLeft = Offset(groupX + groupPadding, size.height - thisWeekHeight),
+                        size = Size(barWidth, thisWeekHeight),
+                        cornerRadius = CornerRadius(barWidth / 2, barWidth / 2)
+                    )
+
+                    // Historical average bar
+                    drawRoundRect(
+                        color = BarGray,
+                        topLeft = Offset(
+                            groupX + groupPadding + barWidth + intraBarGap,
+                            size.height - histHeight
+                        ),
+                        size = Size(barWidth, histHeight),
+                        cornerRadius = CornerRadius(barWidth / 2, barWidth / 2)
+                    )
+                }
+            }
+
+            // 3. X-Axis Labels
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 36.dp)
+            ) {
+                bars.forEach { bar ->
+                    Text(
+                        text = bar.dayLabel,
+                        modifier = Modifier.weight(1f),
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                        color = Color(0xFF64748B),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }
