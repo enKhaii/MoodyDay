@@ -84,6 +84,9 @@ class HomeViewModel : ViewModel() {
                     } else null to InsightType.NEUTRAL
                 } ?: (null to InsightType.NEUTRAL)
 
+                val nowHour = java.time.LocalTime.now().hour
+                val isNight = nowHour >= 19 || nowHour < 7
+
                 _uiState.value = HomeUiState(
                     isLoading = false,
                     cityName = cityName,
@@ -94,11 +97,11 @@ class HomeViewModel : ViewModel() {
                     windSpeed = weatherResponse.current.wind_speed_10m,
                     uvIndex = weatherResponse.daily?.uv_index_max?.firstOrNull(),
                     condition = WeatherCodeTranslator.toDescription(weatherResponse.current.weather_code),
-                    conditionEmoji = WeatherCodeTranslator.toEmoji(weatherResponse.current.weather_code),
+                    conditionEmoji = WeatherCodeTranslator.toEmoji(weatherResponse.current.weather_code, isNight = isNight),
                     insight = insight,
                     insightText = insightText,
                     insightType = insightType,
-                    weatherIcon = WeatherCodeTranslator.toIcon(weatherResponse.current.weather_code),
+                    weatherIcon = WeatherCodeTranslator.toIcon(weatherResponse.current.weather_code, isNight = isNight),
                 )
             } catch (e : Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Failed to Load Weather")

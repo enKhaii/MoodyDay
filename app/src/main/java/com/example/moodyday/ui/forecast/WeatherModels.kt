@@ -6,7 +6,8 @@ package com.example.moodyday.ui.forecast
 data class HourlyPoint(
     val label: String,      // "1 PM"
     val tempF: Int,
-    val weatherCode: Int
+    val weatherCode: Int,
+    val isNight: Boolean = false
 )
 
 data class DailyOutlook(

@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.moodyday.data.remote.WeatherCodeTranslator
 import com.example.moodyday.ui.weather.SelectedCityViewModel
+import java.time.LocalTime
 import kotlin.math.roundToInt
 
 private val BarGray = Color(0xFFB0BEC5)
@@ -171,6 +172,9 @@ fun ForecastScreen(
 
                     // Now & Hourly Dynamic Scrollable Carousel
                     item {
+                        val currentHour = remember { LocalTime.now().hour }
+                        val isNowNight = currentHour >= 19 || currentHour < 7
+
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             contentPadding = PaddingValues(horizontal = 20.dp),
@@ -180,6 +184,7 @@ fun ForecastScreen(
                                 NowTile(
                                     temp = homeState.nowTempF,
                                     weatherCode = homeState.nowWeatherCode,
+                                    isNight = isNowNight,
                                     modifier = Modifier.width(90.dp)
                                 )
                             }
@@ -380,7 +385,12 @@ fun ForecastScreen(
 }
 
 @Composable
-private fun NowTile(temp: Int, weatherCode: Int, modifier: Modifier = Modifier) {
+private fun NowTile(
+    temp: Int,
+    weatherCode: Int,
+    modifier: Modifier = Modifier,
+    isNight: Boolean = (LocalTime.now().hour >= 19 || LocalTime.now().hour < 7)
+) {
     Card(
         modifier = modifier.height(130.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF005B82)),
@@ -400,7 +410,7 @@ private fun NowTile(temp: Int, weatherCode: Int, modifier: Modifier = Modifier) 
                 fontSize = 13.sp
             )
             Text(
-                text = WeatherCodeTranslator.toEmoji(weatherCode),
+                text = WeatherCodeTranslator.toEmoji(weatherCode, isNight = isNight),
                 fontSize = 28.sp
             )
             Text(
@@ -413,8 +423,27 @@ private fun NowTile(temp: Int, weatherCode: Int, modifier: Modifier = Modifier) 
     }
 }
 
+private fun isNightTime(label: String): Boolean {
+    val trimmed = label.trim()
+    val parts = trimmed.split(" ")
+    if (parts.size == 2) {
+        val hour = parts[0].toIntOrNull() ?: return false
+        val period = parts[1].uppercase()
+        val hour24 = when {
+            period == "AM" && hour == 12 -> 0
+            period == "AM" -> hour
+            period == "PM" && hour == 12 -> 12
+            period == "PM" -> hour + 12
+            else -> hour
+        }
+        return hour24 >= 19 || hour24 < 7
+    }
+    return false
+}
+
 @Composable
 private fun HourTile(point: HourlyPoint, modifier: Modifier = Modifier) {
+    val isNight = point.isNight || isNightTime(point.label)
     Card(
         modifier = modifier.height(130.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -435,7 +464,7 @@ private fun HourTile(point: HourlyPoint, modifier: Modifier = Modifier) {
                 maxLines = 1
             )
             Text(
-                text = WeatherCodeTranslator.toEmoji(point.weatherCode),
+                text = WeatherCodeTranslator.toEmoji(point.weatherCode, isNight = isNight),
                 fontSize = 28.sp
             )
             Text(

@@ -78,10 +78,12 @@ class ForecastRepository(
                         runCatching {
                             val dt = LocalDateTime.parse(time)
                             if (dt < nowDateTime) return@runCatching null
+                            val isNight = dt.hour >= 19 || dt.hour < 7
                             HourlyPoint(
                                 label = formatHourLabel(dt.hour),
                                 tempF = temp.roundToInt(),
-                                weatherCode = code
+                                weatherCode = code,
+                                isNight = isNight
                             )
                         }.getOrNull()
                     }
