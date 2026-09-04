@@ -16,19 +16,18 @@ import com.example.moodyday.ui.auth.RegisterScreen
 import com.example.moodyday.ui.forecast.ForecastScreen
 import com.example.moodyday.ui.forecast.ForecastViewModel
 import com.example.moodyday.ui.goals.GoalsScreen
+import com.example.moodyday.ui.goals.GoalsViewModel
 import com.example.moodyday.ui.settings.SettingsScreen
+import com.example.moodyday.ui.settings.SettingsViewModel
 import com.example.moodyday.ui.splash.AnimatedSplashScreen
 import com.example.moodyday.ui.tips.TipsScreen
 import com.example.moodyday.ui.user.OnboardingScreen
+import com.example.moodyday.ui.user.ProfileScreen
 import com.example.moodyday.ui.weather.CitySearchScreen
 import com.example.moodyday.ui.weather.CitySearchViewModel
 import com.example.moodyday.ui.weather.HomeScreen
 import com.example.moodyday.ui.weather.SelectedCityViewModel
 
-// Retrieved from BottomNavBar.items
-// The routes string of screen that CONTAINS bottom navigation bar
-// routesWithTopBar use BottomNavBar.items because it's the SAME 5 SCREENS
-// Separating name just make it easier to understand
 private val routesWithBottomBar = BottomNavBar.items.map { it.route }.toSet()
 private val routesWithTopBar = BottomNavBar.items.map { it.route }.toSet()
 
@@ -39,12 +38,11 @@ fun AppNavGraph(
 ) {
     val context = LocalContext.current
     val appContainer = (context.applicationContext as MoodyDayApplication).container
-    val testUserId = "chongwc"      // REPLACE WITH REAL AUTH UID ONCE LOGIN IS COMPLETED!!
+    val testUserId = "chongwc"
 
     val selectedCityViewModel: SelectedCityViewModel = viewModel()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-
 
     NavHost(
         navController = navController,
@@ -69,7 +67,6 @@ fun AppNavGraph(
         composable(route = NavRoutes.Home.route) {
             HomeScreen(
                 selectedCityViewModel = selectedCityViewModel,
-                // City Search is not MAIN tab so no navigateToTab
                 onSearchClick = { navController.navigate(NavRoutes.CitySearch.route) },
                 onForecastClick = { navController.navigateToTab(NavRoutes.Forecast.route) },
                 onAlertsClick = { navController.navigateToTab(NavRoutes.Alerts.route) },
@@ -103,10 +100,33 @@ fun AppNavGraph(
             TipsScreen()
         }
         composable(route = NavRoutes.Goals.route) {
-            GoalsScreen()
+            val goalsViewModel: GoalsViewModel = viewModel {
+                GoalsViewModel(
+                    goalDao = appContainer.goalDao,
+                    userStreakDao = appContainer.userStreakDao,
+                    userId = testUserId
+                )
+            }
+            GoalsScreen(
+                viewModel = goalsViewModel,
+                onProfileClick = { navController.navigate("profile_route") }
+            )
         }
         composable(route = NavRoutes.Settings.route) {
-            SettingsScreen()
+            val settingsViewModel: SettingsViewModel = viewModel {
+                SettingsViewModel(
+                    settingsDao = appContainer.userSettingsDao,
+                    userId = testUserId
+                )
+            }
+            SettingsScreen(
+                viewModel = settingsViewModel
+            )
+        }
+        composable(route = "profile_route") {
+            ProfileScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

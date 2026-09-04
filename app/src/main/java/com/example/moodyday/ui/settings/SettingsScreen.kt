@@ -1,103 +1,97 @@
 package com.example.moodyday.ui.settings
 
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen() {
-    var isDarkMode by remember { mutableStateOf(false) }
-    var notificationsEnabled by remember { mutableStateOf(true) }
-    var selectedUnit by remember { mutableStateOf("Metric (°C, km)") }
-    var showResetDialog by remember { mutableStateOf(false) }
+fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
+    val settingsState by viewModel.settingsState.collectAsState()
+    val context = LocalContext.current
 
     Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Settings") })
-        }
+        topBar = { TopAppBar(title = { Text("Settings", fontWeight = FontWeight.Bold) }) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
-                .padding(16.dp)
                 .fillMaxSize()
         ) {
-            Text("Appearance", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "PREFERENCES",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Dark Mode")
-                Switch(checked = isDarkMode, onCheckedChange = { isDarkMode = it })
-            }
+            SettingsRow(title = "Temperature Unit", subtitle = settingsState.tempUnit)
+            SettingsRow(title = "Dark Theme", subtitle = settingsState.theme)
 
             Spacer(modifier = Modifier.height(16.dp))
-            Divider()
+            HorizontalDivider()
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Preferences Section
-            Text("Preferences", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "ACCOUNT & DATA",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
+            SettingsRow(title = "Saved Cities", subtitle = "Manage 3 locations")
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Enable Notifications")
-                Switch(checked = notificationsEnabled, onCheckedChange = { notificationsEnabled = it })
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Weather Units")
-                Text(selectedUnit, color = MaterialTheme.colorScheme.secondary)
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-            Divider()
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
-                onClick = { showResetDialog = true },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Reset All Progress")
-            }
-        }
-
-        if (showResetDialog) {
-            AlertDialog(
-                onDismissRequest = { showResetDialog = false },
-                title = { Text("Reset Progress") },
-                text = { Text("Are you sure you want to reset all your goals and streak history? This action cannot be undone.") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        // TODO: Implement reset logic using UserSettingsDao & GoalDao
-                        showResetDialog = false
-                    }) {
-                        Text("Reset", color = MaterialTheme.colorScheme.error)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showResetDialog = false }) {
-                        Text("Cancel")
-                    }
+                Column {
+                    Text("Notifications", style = MaterialTheme.typography.bodyLarge)
+                    Text("Alerts, Tips & Goals", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                Switch(
+                    checked = settingsState.notificationsEnabled,
+                    onCheckedChange = { isChecked ->
+                        viewModel.toggleNotifications(isChecked)
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Reset Progress",
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        viewModel.resetProgress()
+                        Toast.makeText(context, "Progress has been reset!", Toast.LENGTH_SHORT).show()
+                    }
+                    .padding(16.dp)
             )
         }
+    }
+}
+
+@Composable
+fun SettingsRow(title: String, subtitle: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { }
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Text(title, style = MaterialTheme.typography.bodyLarge)
+        Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

@@ -1,34 +1,44 @@
 package com.example.moodyday.ui.goals
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.moodyday.data.local.entities.GoalEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GoalsScreen() {
+fun GoalsScreen(
+    viewModel: GoalsViewModel = viewModel(),
+    onProfileClick: () -> Unit = {}
+) {
     var showDialog by remember { mutableStateOf(false) }
     var newGoalTitle by remember { mutableStateOf("") }
 
-    val goals = remember { mutableStateOf(listOf("Reduce Plastic Usage", "Plant a Tree", "Conserve Water")) }
+    val userStreak by viewModel.userStreak.collectAsState()
+    val allGoals by viewModel.goals.collectAsState()
 
-    val recommendedActionTime = suggestBestTime(currentWeatherCondition = "Sunny", goalType = "Outdoor")
+    val activeGoals = allGoals.filter { !it.isCompleted }
+    val completedGoals = allGoals.filter { it.isCompleted }
 
     Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Climate Action Goals") })
-        },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Goal")
-            }
+            ExtendedFloatingActionButton(
+                onClick = { showDialog = true },
+                icon = { Icon(Icons.Default.Add, contentDescription = "Add Goal") },
+                text = { Text("Add Goal") }
+            )
         }
     ) { paddingValues ->
         Column(
@@ -37,36 +47,65 @@ fun GoalsScreen() {
                 .padding(16.dp)
                 .fillMaxSize()
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Current Streak: 🔥 5 Days", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text("AI Weather Suggestion: $recommendedActionTime", style = MaterialTheme.typography.bodyMedium)
-                }
-            }
+            Text("Climate Goals", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text("Track your daily environmental impact.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Your Active Goals", style = MaterialTheme.typography.titleLarge)
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 目标列表
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(goals.value) { goal ->
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(text = goal, style = MaterialTheme.typography.bodyLarge)
-                            Checkbox(checked = false, onCheckedChange = { /* TODO: Mark goal as completed */ })
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onProfileClick() },
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(modifier = Modifier.size(40.dp), shape = CircleShape) {
+                            Icon(Icons.Default.Person, contentDescription = "Avatar", modifier = Modifier.padding(8.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Alex River", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text("Seattle, WA", style = MaterialTheme.typography.bodySmall)
                         }
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("🔥 ${userStreak.currentStreak} Day Streak", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text("You're on fire! Keep it up.", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Active Goals", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("${activeGoals.size} Remaining", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(activeGoals) { goal ->
+                    GoalItem(
+                        goal = goal,
+                        onCheckedChange = { isChecked ->
+                            viewModel.toggleGoalCompletion(goal.id, isChecked)
+                        }
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text("Completed Today", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                items(completedGoals) { goal ->
+                    GoalItem(
+                        goal = goal,
+                        onCheckedChange = { isChecked ->
+                            viewModel.toggleGoalCompletion(goal.id, isChecked)
+                        }
+                    )
                 }
             }
         }
@@ -74,42 +113,48 @@ fun GoalsScreen() {
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
-                title = { Text("Add New Climate Goal") },
+                title = { Text("Add Goal") },
                 text = {
                     OutlinedTextField(
                         value = newGoalTitle,
                         onValueChange = { newGoalTitle = it },
-                        label = { Text("Goal Description") }
+                        label = { Text("Goal Title") }
                     )
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        if (newGoalTitle.isNotBlank()) {
-                            goals.value = goals.value + newGoalTitle
-                            newGoalTitle = ""
-                            showDialog = false
-                        }
-                    }) {
-                        Text("Add")
-                    }
+                        viewModel.addGoal(newGoalTitle)
+                        newGoalTitle = ""
+                        showDialog = false
+                    }) { Text("Add") }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDialog = false }) {
-                        Text("Cancel")
-                    }
+                    TextButton(onClick = { showDialog = false }) { Text("Cancel") }
                 }
             )
         }
     }
 }
 
-fun suggestBestTime(currentWeatherCondition: String, goalType: String): String {
-    return when {
-        currentWeatherCondition.contains("Sunny", ignoreCase = true) ->
-            "Best time for outdoor tree planting: Early morning (7:00 AM - 9:00 AM)"
-        currentWeatherCondition.contains("Rain", ignoreCase = true) ->
-            "Great time for indoor energy saving and recycling sorting!"
-        else ->
-            "Optimal time for climate action: Today between 4:00 PM - 6:00 PM"
+@Composable
+fun GoalItem(goal: GoalEntity, onCheckedChange: (Boolean) -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Row(
+            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(checked = goal.isCompleted, onCheckedChange = onCheckedChange)
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                Text(goal.text, style = MaterialTheme.typography.bodyLarge)
+                if (!goal.weatherCondition.isNullOrEmpty()) {
+                    Text(
+                        text = goal.weatherCondition,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
     }
 }

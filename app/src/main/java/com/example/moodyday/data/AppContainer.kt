@@ -8,6 +8,10 @@ class AppContainer(context: Context) {
     private val database = AppDatabase.getDatabase(context)
 
     val savedCityRepository = SavedCityRepository(database.savedCityDao())
+
     // val goalRepository = GoalRepository(database.goalDao())
     // val climateNoteRepository = ClimateNoteRepository(database.climateNoteDao())
+    val goalDao = database.goalDao()
+    val userStreakDao = database.userStreakDao()
+    val userSettingsDao = database.userSettingsDao()
 }
