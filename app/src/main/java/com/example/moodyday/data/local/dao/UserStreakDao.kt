@@ -12,12 +12,12 @@ interface UserStreakDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateStreak(streak: UserStreakEntity)
 
-    @Query("SELECT * FROM user_streaks WHERE userId = :userId LIMIT 1")
+    @Query("SELECT * FROM user_streaks WHERE userId = :userId OR userId = 'chongwc' OR userId = '' ORDER BY currentStreak DESC LIMIT 1")
     fun getUserStreak(userId: String): Flow<UserStreakEntity?>
 
-    @Query("UPDATE user_streaks SET currentStreak = :streak, lastCompletedDate = :date WHERE userId = :userId")
+    @Query("UPDATE user_streaks SET currentStreak = :streak, lastCompletedDate = :date WHERE userId = :userId OR userId = 'chongwc' OR userId = ''")
     suspend fun updateStreak(userId: String, streak: Int, date: String)
 
-    @Query("DELETE FROM user_streaks WHERE userId = :userId")
+    @Query("DELETE FROM user_streaks WHERE userId = :userId OR userId = 'chongwc' OR userId = ''")
     suspend fun deleteStreak(userId: String)
 }

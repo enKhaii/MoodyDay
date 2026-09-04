@@ -154,33 +154,49 @@ fun RegisterScreen(
                     )
 
                     if (errorMessage.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = errorMessage,
-                            color = MaterialTheme.colorScheme.error,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFFEE2E2), shape = RoundedCornerShape(12.dp))
+                                .padding(horizontal = 14.dp, vertical = 10.dp)
+                        ) {
+                            Text(
+                                text = errorMessage,
+                                color = Color(0xFFB91C1C),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
                         onClick = {
-                            if (email.isBlank() || password.isBlank()) {
+                            val trimmedEmail = email.trim()
+                            if (trimmedEmail.isBlank() || password.isBlank()) {
                                 errorMessage = "Email and password cannot be empty"
+                                return@Button
+                            }
+                            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches()) {
+                                errorMessage = "Please enter a valid email address"
+                                return@Button
+                            }
+                            if (password.length < 6) {
+                                errorMessage = "Password must be at least 6 characters long"
                                 return@Button
                             }
                             isLoading = true
                             coroutineScope.launch {
                                 try {
                                     supabase.auth.signUpWith(Email) {
-                                        this.email = email
+                                        this.email = trimmedEmail
                                         this.password = password
                                     }
                                     onRegisterSuccess()
                                 } catch (e: Exception) {
-                                    errorMessage = e.localizedMessage ?: "Registration failed"
+                                    errorMessage = AuthErrorTranslator.parseRegistrationError(e)
                                 } finally {
                                     isLoading = false
                                 }

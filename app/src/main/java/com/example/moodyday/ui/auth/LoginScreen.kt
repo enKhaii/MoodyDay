@@ -156,20 +156,28 @@ fun LoginScreen(
                     )
 
                     if (errorMessage.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = errorMessage,
-                            color = MaterialTheme.colorScheme.error,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFFEE2E2), shape = RoundedCornerShape(12.dp))
+                                .padding(horizontal = 14.dp, vertical = 10.dp)
+                        ) {
+                            Text(
+                                text = errorMessage,
+                                color = Color(0xFFB91C1C),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
                         onClick = {
-                            if (email.isBlank() || password.isBlank()) {
+                            val trimmedEmail = email.trim()
+                            if (trimmedEmail.isBlank() || password.isBlank()) {
                                 errorMessage = "Please fill in all fields"
                                 return@Button
                             }
@@ -177,12 +185,12 @@ fun LoginScreen(
                             coroutineScope.launch {
                                 try {
                                     supabase.auth.signInWith(Email) {
-                                        this.email = email
+                                        this.email = trimmedEmail
                                         this.password = password
                                     }
                                     onNavigateToHome()
                                 } catch (e: Exception) {
-                                    errorMessage = e.localizedMessage ?: "Invalid credentials"
+                                    errorMessage = AuthErrorTranslator.parseLoginError(e)
                                 } finally {
                                     isLoading = false
                                 }

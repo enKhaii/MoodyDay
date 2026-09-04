@@ -71,8 +71,7 @@ private val PillBackground = Color(0xFFE9ECEF)
 
 @Composable
 fun GoalsScreen(
-    viewModel: GoalsViewModel,
-    onProfileClick: () -> Unit = {}
+    viewModel: GoalsViewModel
 ) {
     var showAddScreen by remember { mutableStateOf(false) }
     var goalToEdit by remember { mutableStateOf<GoalEntity?>(null) }
@@ -212,8 +211,7 @@ fun GoalsScreen(
                 // Streak Card Section
                 item {
                     StreakCard(
-                        streakCount = userStreak.currentStreak,
-                        modifier = Modifier.clickable { onProfileClick() }
+                        streakCount = userStreak.currentStreak
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                 }

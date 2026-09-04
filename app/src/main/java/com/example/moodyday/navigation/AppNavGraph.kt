@@ -39,7 +39,6 @@ fun AppNavGraph(
 ) {
     val context = LocalContext.current
     val appContainer = (context.applicationContext as MoodyDayApplication).container
-    val userId = SessionManager.currentUserId ?: ""
 
     val selectedCityViewModel: SelectedCityViewModel = viewModel()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -67,7 +66,7 @@ fun AppNavGraph(
                 },
                 onNavigateToHome = {
                     navController.navigate(NavRoutes.Home.route) {
-                        popUpTo(NavRoutes.Login.route) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -79,7 +78,7 @@ fun AppNavGraph(
                 },
                 onRegisterSuccess = {
                     navController.navigate(NavRoutes.Home.route) {
-                        popUpTo(NavRoutes.Login.route) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -94,11 +93,12 @@ fun AppNavGraph(
             )
         }
         composable(route = NavRoutes.CitySearch.route) {
+            val activeUserId = SessionManager.getActiveUserId()
             CitySearchScreen(
-                viewModel = viewModel {
+                viewModel = viewModel(key = activeUserId) {
                     CitySearchViewModel(
                         repository = appContainer.savedCityRepository,
-                        userId = userId
+                        userId = activeUserId
                     )
                 },
                 selectedCityViewModel = selectedCityViewModel,
@@ -127,17 +127,18 @@ fun AppNavGraph(
             )
         }
         composable(route = NavRoutes.Goals.route) {
-            val goalsViewModel: GoalsViewModel = viewModel {
+            val activeUserId = SessionManager.getActiveUserId()
+            val goalsViewModel: GoalsViewModel = viewModel(key = activeUserId) {
                 GoalsViewModel(
                     goalDao = appContainer.goalDao,
                     userStreakDao = appContainer.userStreakDao,
-                    userId = userId,
+                    userStreakRepository = appContainer.userStreakRepository,
+                    userId = activeUserId,
                     selectedCityViewModel = selectedCityViewModel
                 )
             }
             GoalsScreen(
-                viewModel = goalsViewModel,
-                onProfileClick = { navController.navigate("profile_route") }
+                viewModel = goalsViewModel
             )
         }
         composable(route = NavRoutes.Settings.route) {

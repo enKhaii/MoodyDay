@@ -54,6 +54,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import com.example.moodyday.MoodyDayApplication
+import com.example.moodyday.data.auth.SessionManager
 import java.time.LocalDate
 
 @Composable
@@ -65,9 +66,9 @@ fun MainScreen() {
 
     val context = LocalContext.current
     val appContainer = (context.applicationContext as MoodyDayApplication).container
-    val testUserId = "chongwc"
+    val activeUserId = SessionManager.getActiveUserId()
 
-    val userStreakEntity by appContainer.userStreakDao.getUserStreak(testUserId)
+    val userStreakEntity by appContainer.userStreakDao.getUserStreak(activeUserId)
         .collectAsState(initial = null)
 
     val streakCount = remember(userStreakEntity) {

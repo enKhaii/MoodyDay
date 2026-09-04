@@ -24,16 +24,70 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.moodyday.R
 import com.example.moodyday.navigation.NavRoutes
+import com.example.moodyday.data.remote.supabase
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
 fun LoadingScreen(navController: NavController) {
-    // Automatically navigate to Onboarding Screen after a short delay (or replace delay with actual initialization logic)
     LaunchedEffect(Unit) {
-        delay(1500)
-        navController.navigate(NavRoutes.Onboarding.route) {
-            // Pop the loading screen off the stack so the user can't press back to return to it
-            popUpTo(NavRoutes.Splash.route) { inclusive = true }
+        val minSplashTime = 800L
+        val startTime = System.currentTimeMillis()
+
+        var navigated = false
+        fun navigateTo(route: String) {
+            if (navigated) return
+            navigated = true
+            navController.navigate(route) {
+                popUpTo(NavRoutes.Splash.route) { inclusive = true }
+            }
+        }
+
+        withTimeoutOrNull(3000L) {
+            supabase.auth.sessionStatus.collect { status ->
+                when (status) {
+                    is SessionStatus.Authenticated -> {
+                        val elapsed = System.currentTimeMillis() - startTime
+                        if (elapsed < minSplashTime) {
+                            delay(minSplashTime - elapsed)
+                        }
+                        navigateTo(NavRoutes.Home.route)
+                    }
+                    is SessionStatus.NotAuthenticated -> {
+                        val elapsed = System.currentTimeMillis() - startTime
+                        if (elapsed < minSplashTime) {
+                            delay(minSplashTime - elapsed)
+                        }
+                        navigateTo(NavRoutes.Onboarding.route)
+                    }
+                    is SessionStatus.RefreshFailure -> {
+                        val elapsed = System.currentTimeMillis() - startTime
+                        if (elapsed < minSplashTime) {
+                            delay(minSplashTime - elapsed)
+                        }
+                        if (supabase.auth.currentUserOrNull() != null) {
+                            navigateTo(NavRoutes.Home.route)
+                        } else {
+                            navigateTo(NavRoutes.Onboarding.route)
+                        }
+                    }
+                    is SessionStatus.Initializing -> {
+                        // Wait for session initialization to complete
+                    }
+                }
+            }
+        }
+
+        // Fallback if timeout expires
+        if (!navigated) {
+            val destination = if (supabase.auth.currentUserOrNull() != null) {
+                NavRoutes.Home.route
+            } else {
+                NavRoutes.Onboarding.route
+            }
+            navigateTo(destination)
         }
     }
 

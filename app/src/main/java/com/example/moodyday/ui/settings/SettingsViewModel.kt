@@ -24,7 +24,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val goalDao = db.goalDao()
     private val cityDao = db.savedCityDao()
 
-    private val userId: String = supabase.auth.currentUserOrNull()?.id ?: SessionManager.currentUserId ?: "user"
+    private val userId: String = SessionManager.getActiveUserId()
 
     val settingsState: StateFlow<UserSettingsEntity> = settingsDao.getUserSettings(userId)
         .map { it ?: UserSettingsEntity(userId = userId) }
@@ -46,10 +46,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private fun observeMonthlyGoals() {
         viewModelScope.launch {
             goalDao.getGoalsForUser(userId).collect { goals ->
-                val startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay()
+                val startOfMonth = LocalDate.now().withDayOfMonth(1)
                 val monthlyCount = goals.count { goal ->
                     goal.isCompleted && runCatching {
-                        LocalDateTime.parse(goal.createdAt) >= startOfMonth
+                        val dateStr = (goal.completedAt ?: goal.createdAt).substringBefore("T")
+                        LocalDate.parse(dateStr) >= startOfMonth
                     }.getOrDefault(false)
                 }
                 _completedGoalsCount.value = monthlyCount

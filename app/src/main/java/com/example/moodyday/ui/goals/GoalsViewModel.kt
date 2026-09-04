@@ -18,17 +18,20 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import com.example.moodyday.data.repository.UserStreakRepository
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
+import kotlinx.coroutines.withTimeoutOrNull
 
 class GoalsViewModel(
     private val goalDao: GoalDao,
     private val userStreakDao: UserStreakDao,
-    private val userId: String = SessionManager.currentUserId ?: "",
+    private val userStreakRepository: UserStreakRepository? = null,
+    private val userId: String = SessionManager.getActiveUserId(),
     private val weatherApi: WeatherApi = RetrofitProvider.weatherApi,
     private val selectedCityViewModel: SelectedCityViewModel? = null
 ) : ViewModel() {
@@ -57,7 +60,11 @@ class GoalsViewModel(
 
     init {
         viewModelScope.launch {
+            // Restore streak & stats from Supabase if remote is available
+            runCatching { userStreakRepository?.fetchFromRemote(userId) }
             syncStreakIfNeeded()
+            // Preload hourly points in background so addGoal is instant
+            runCatching { getHourlyForecast() }
         }
     }
 
@@ -76,14 +83,25 @@ class GoalsViewModel(
             } else {
                 0
             }
-            userStreakDao.insertOrUpdateStreak(
-                UserStreakEntity(
-                    id = currentStreakEntity?.id ?: 0,
+            val newStreak = prevStreak + 1
+            val completedCount = allGoals.count { it.isCompleted }
+            if (userStreakRepository != null) {
+                userStreakRepository.saveStreak(
                     userId = userId,
-                    currentStreak = prevStreak + 1,
-                    lastCompletedDate = todayStr
+                    currentStreak = newStreak,
+                    lastCompletedDate = todayStr,
+                    completedGoalsCount = completedCount
                 )
-            )
+            } else {
+                userStreakDao.insertOrUpdateStreak(
+                    UserStreakEntity(
+                        id = currentStreakEntity?.id ?: 0,
+                        userId = userId,
+                        currentStreak = newStreak,
+                        lastCompletedDate = todayStr
+                    )
+                )
+            }
         }
     }
 
@@ -137,6 +155,7 @@ class GoalsViewModel(
                 val updatedRecommendation = suggestBestTime(newText, category, hourly)
 
                 val updatedGoal = goal.copy(
+                    userId = userId,
                     text = newText.trim(),
                     weatherCondition = updatedRecommendation,
                     category = category,
@@ -159,7 +178,7 @@ class GoalsViewModel(
         viewModelScope.launch {
             val goal = goals.value.find { it.id == goalId } ?: return@launch
             val completedAt = if (isCompleted) LocalDateTime.now().toString() else null
-            goalDao.updateGoal(goal.copy(isCompleted = isCompleted, completedAt = completedAt))
+            goalDao.updateGoal(goal.copy(userId = userId, isCompleted = isCompleted, completedAt = completedAt))
 
             updateStreakOnCompletionChange(isCompleted)
         }
@@ -175,38 +194,61 @@ class GoalsViewModel(
         val currentStreak = currentStreakEntity?.currentStreak ?: 0
         val lastDate = currentStreakEntity?.lastCompletedDate
 
+        val allUserGoals = goalDao.getGoalsForUser(userId).first()
+        val totalCompleted = allUserGoals.count { it.isCompleted }
+
         if (isCompleted) {
-            if (lastDate == todayStr) {
-                // Streak already counted for today
-                return
-            }
-            val newStreak = if (lastDate == yesterdayStr) {
+            val newStreak = if (lastDate == todayStr) {
+                currentStreak
+            } else if (lastDate == yesterdayStr) {
                 currentStreak + 1
             } else {
                 1
             }
-            userStreakDao.insertOrUpdateStreak(
-                UserStreakEntity(
-                    id = currentStreakEntity?.id ?: 0,
+
+            if (userStreakRepository != null) {
+                userStreakRepository.saveStreak(
                     userId = userId,
                     currentStreak = newStreak,
-                    lastCompletedDate = todayStr
+                    lastCompletedDate = todayStr,
+                    completedGoalsCount = totalCompleted
                 )
-            )
+            } else {
+                userStreakDao.insertOrUpdateStreak(
+                    UserStreakEntity(
+                        id = currentStreakEntity?.id ?: 0,
+                        userId = userId,
+                        currentStreak = newStreak,
+                        lastCompletedDate = todayStr
+                    )
+                )
+            }
         } else {
             // Check if there are still any other goals completed today
-            val allUserGoals = goalDao.getGoalsForUser(userId).first()
             val hasOtherCompletedToday = allUserGoals.any {
                 it.isCompleted && it.completedAt?.startsWith(todayStr) == true
             }
-            if (!hasOtherCompletedToday && lastDate == todayStr) {
-                val revertedStreak = (currentStreak - 1).coerceAtLeast(0)
+            val (revertedStreak, revertedDate) = if (!hasOtherCompletedToday && lastDate == todayStr) {
+                val s = (currentStreak - 1).coerceAtLeast(0)
+                Pair(s, if (s > 0) yesterdayStr else null)
+            } else {
+                Pair(currentStreak, lastDate)
+            }
+
+            if (userStreakRepository != null) {
+                userStreakRepository.saveStreak(
+                    userId = userId,
+                    currentStreak = revertedStreak,
+                    lastCompletedDate = revertedDate,
+                    completedGoalsCount = totalCompleted
+                )
+            } else {
                 userStreakDao.insertOrUpdateStreak(
                     UserStreakEntity(
                         id = currentStreakEntity?.id ?: 0,
                         userId = userId,
                         currentStreak = revertedStreak,
-                        lastCompletedDate = if (revertedStreak > 0) yesterdayStr else null
+                        lastCompletedDate = revertedDate
                     )
                 )
             }
@@ -216,37 +258,39 @@ class GoalsViewModel(
     private suspend fun getHourlyForecast(): List<HourlyPoint> {
         if (cachedHourlyPoints.isNotEmpty()) return cachedHourlyPoints
         return try {
-            val lat = selectedCityViewModel?.selectedCity?.value?.lat ?: 3.140853
-            val lon = selectedCityViewModel?.selectedCity?.value?.lon ?: 101.693207
-            val weather = weatherApi.getWeather(lat, lon, pastDays = 0)
-            val nowDateTime = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0)
+            withTimeoutOrNull(2500L) {
+                val lat = selectedCityViewModel?.selectedCity?.value?.lat ?: 3.140853
+                val lon = selectedCityViewModel?.selectedCity?.value?.lon ?: 101.693207
+                val weather = weatherApi.getWeather(lat, lon, pastDays = 0)
+                val nowDateTime = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0)
 
-            val points = weather.hourly?.let { hourlyBlock ->
-                hourlyBlock.time
-                    .zip(hourlyBlock.temperature_2m)
-                    .zip(hourlyBlock.weather_code) { (time, temp), code -> Triple(time, temp, code) }
-                    .mapNotNull { (time, temp, code) ->
-                        runCatching {
-                            val dt = LocalDateTime.parse(time)
-                            if (dt < nowDateTime) return@runCatching null
-                            val hour24 = dt.hour
-                            val period = if (hour24 >= 12) "PM" else "AM"
-                            val hour12 = when {
-                                hour24 == 0 -> 12
-                                hour24 > 12 -> hour24 - 12
-                                else -> hour24
-                            }
-                            HourlyPoint(
-                                label = "$hour12 $period",
-                                tempF = temp.roundToInt(),
-                                weatherCode = code
-                            )
-                        }.getOrNull()
-                    }.take(24)
+                val points = weather.hourly?.let { hourlyBlock ->
+                    hourlyBlock.time
+                        .zip(hourlyBlock.temperature_2m)
+                        .zip(hourlyBlock.weather_code) { (time, temp), code -> Triple(time, temp, code) }
+                        .mapNotNull { (time, temp, code) ->
+                            runCatching {
+                                val dt = LocalDateTime.parse(time)
+                                if (dt < nowDateTime) return@runCatching null
+                                val hour24 = dt.hour
+                                val period = if (hour24 >= 12) "PM" else "AM"
+                                val hour12 = when {
+                                    hour24 == 0 -> 12
+                                    hour24 > 12 -> hour24 - 12
+                                    else -> hour24
+                                }
+                                HourlyPoint(
+                                    label = "$hour12 $period",
+                                    tempF = temp.roundToInt(),
+                                    weatherCode = code
+                                )
+                            }.getOrNull()
+                        }.take(24)
+                } ?: emptyList()
+
+                cachedHourlyPoints = points
+                points
             } ?: emptyList()
-
-            cachedHourlyPoints = points
-            points
         } catch (e: Exception) {
             emptyList()
         }

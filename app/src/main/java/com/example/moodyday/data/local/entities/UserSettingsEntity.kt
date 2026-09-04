@@ -9,5 +9,5 @@ data class UserSettingsEntity(
     val userId: String,
     val tempUnit: String = "C",
     val theme: String = "light",
-    val notificationsEnabled: Boolean = true
+    val notificationsEnabled: Boolean = false
 )
